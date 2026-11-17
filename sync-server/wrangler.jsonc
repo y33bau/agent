@@ -1,0 +1,1 @@
+{"name":"wellbeing-sync","main":"worker.js","compatibility_date":"2026-11-17","durable_objects":{"bindings":[{"name":"VAULTS","class_name":"SyncVault"}]},"migrations":[{"tag":"v1","new_sqlite_classes":["SyncVault"]}],"preview_urls":false}

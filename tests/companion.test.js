@@ -1,0 +1,11 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {pickTask,radar,funnel,phoneUrl,appendNote} from '../companion-core.js';
+test('low energy selects a small available task',()=>assert.equal(pickTask([{id:1,tier:'big'},{id:2,tier:'micro'}],30,'low',()=>true,()=>0).id,2));
+test('closed tasks cannot enter the draw',()=>assert.equal(pickTask([{id:1,tier:'micro',closed:true}],5,'low',t=>!t.closed),null));
+test('empty task list has no invented task',()=>assert.equal(pickTask([],5,'medium',()=>true),null));
+test('short sessions fall back to the smallest available task',()=>assert.equal(pickTask([{id:1,tier:'big'},{id:2,tier:'normal'}],5,'medium',()=>true).id,2));
+test('radar excludes finished and archived contacts',()=>{const r=radar([{id:1,stage:'won'},{id:2,archived:true},{id:3,nextDate:'2026-11-16'},{id:4,nextDate:'2026-11-17'}],'2026-11-17');assert.deepEqual(r.map(x=>[x.id,x.urgency]),[[3,'late'],[4,'today']]);});
+test('funnel excludes voided activity and distinguishes answered calls',()=>assert.deepEqual(funnel([{type:'call',outcome:'noanswer'},{type:'call',outcome:'reached'},{type:'sale',voided:true}]),{calls:2,reached:1,meetings:0,mandates:0,sales:0,answerRate:50}));
+test('no calls produces no fictional percentage',()=>assert.equal(funnel([]).answerRate,null));
+test('phone links reject invalid numbers and remove punctuation',()=>{assert.equal(phoneUrl('+48 123-456-789'),'tel:+48123456789');assert.equal(phoneUrl('abc'),null);});
+test('field notes preserve existing text within storage limit',()=>{assert.equal(appendNote('Old','New'),'Old\nNew');assert.ok(appendNote('x'.repeat(2000),'new').length<=2000);});

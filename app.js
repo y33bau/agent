@@ -211,3 +211,6 @@ let lastDay=today();setInterval(()=>{renderFocus();if(lastDay!==today()){lastDay
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderFocus();if(lastDay!==today()){lastDay=today();render();}}});
 render();
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').then(reg=>{if(navigator.serviceWorker.controller)return;if(reg.active)toast('Twoje centrum dowodzenia jest gotowe offline.');else reg.addEventListener('updatefound',()=>reg.installing?.addEventListener('statechange',e=>{if(e.target.state==='activated')toast('Twoje centrum dowodzenia jest gotowe offline.');}));}).catch(()=>toast('Tryb offline chwilowo niedostępny. Zapis lokalny nadal działa.'));
+
+// Shared add-ons use the existing validator and persistence path.
+document.addEventListener('companion-state',e=>{const q=e.detail;if(q.action==='read'){q.result=structuredClone(state);return;}try{if(loadFailed)throw Error('Najpierw odzyskaj oryginalny zapis w ustawieniach.');const before=state,next=structuredClone(state);q.update(next);C.validate(next);state=next;if(!save()){state=before;throw Error('Nie udało się zapisać zmiany.');}render();q.result=true;}catch(err){q.error=err.message;}});
