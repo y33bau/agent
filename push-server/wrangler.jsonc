@@ -1,0 +1,22 @@
+{
+  "name": "agent-synapse-push",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "vars": {
+    "ALLOWED_ORIGIN": "https://y33bau.github.io"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SUBSCRIPTIONS",
+      "id": "REPLACE_WITH_PRIVATE_KV_NAMESPACE_ID"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "*/5 * * * *"
+    ]
+  }
+}

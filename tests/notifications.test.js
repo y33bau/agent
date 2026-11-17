@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {defaultReminders,dueReminders,validateReminders,reminderMessage,localClock} from '../notification-core.js';
+const now=s=>new Date(s).getTime();
+test('reminders are disabled by default',()=>assert.equal(dueReminders(defaultReminders('adhd'),now('2026-11-17T08:00:00Z')).length,0));
+test('water and work reminder slots use Europe/Warsaw local time',()=>{const c={...defaultReminders('adhd'),enabled:true};assert.equal(dueReminders(c,now('2026-11-17T08:00:00Z')).length,2);assert.equal(localClock(now('2026-11-17T08:00:00Z')).minute,540);});
+test('water reminders stop after goal; work reminders continue',()=>{const c={...defaultReminders('adhd'),enabled:true};const due=dueReminders(c,now('2026-11-17T08:00:00Z'),true);assert.deepEqual(due.map(x=>x.kind),['work']);});
+test('dedupe prevents repeating same notification slot',()=>{const c={...defaultReminders('adhd'),enabled:true};for(const item of dueReminders(c,now('2026-11-17T08:00:00Z')))c.last[item.key]=true;assert.equal(dueReminders(c,now('2026-11-17T08:03:00Z')).length,0);});
+test('no backfill outside five-minute delivery window or quiet hours',()=>{const c={...defaultReminders('adhd'),enabled:true};assert.equal(dueReminders(c,now('2026-11-17T08:06:00Z')).length,0);assert.equal(dueReminders(c,now('2026-11-17T21:00:00Z')).length,0);});
+test('agent reminders skip weekends by default',()=>{const c={...defaultReminders('agent'),enabled:true};assert.equal(dueReminders(c,now('2026-11-21T08:00:00Z')).length,0);});
+test('invalid reminder schedules are rejected',()=>{assert.throws(()=>validateReminders({start:20,end:9},'adhd'));assert.throws(()=>validateReminders({waterEvery:1},'adhd'));});
+test('notification content is generic and includes no client data',()=>{assert.match(reminderMessage('adhd','water').body,/200 ml/);assert.match(reminderMessage('agent','work').title,/AGENT EMPIRE/);});

@@ -57,3 +57,10 @@ npm test
 Testy obejmują rozdzielenie walut, idempotencję zapisów, cofanie, dzienne bonusy, misje, migrację, timer, walidację importu oraz generowanie widoków z atrapą DOM. Nie zastępują testów wizualnych i urządzeń.
 
 PWA offline działa po pierwszym pełnym załadowaniu przez HTTPS. Aktualizacja service workera aktywuje się po zamknięciu starych kart. Przy zmianach zwiększ CACHE w sw.js. Dane między urządzeniami przenosi się plikiem; synchronizacji kont nie ma.
+
+
+## Powiadomienia (v2.1)
+
+Ustawienia → Powiadomienia i przypomnienia. Zgoda systemowa jest pytana dopiero po naciśnięciu przycisku. Przypomnienia lokalne działają przy otwartej aplikacji, w wybranych godzinach; nie są push po jej zamknięciu. iPhone wymaga aplikacji dodanej do ekranu początkowego.
+
+Prawdziwy Web Push jest obsługiwany przez service worker i panel połączenia. Wymaga uruchomienia prywatnej usługi z katalogu push-server w repozytorium agent, kluczy VAPID i wpisania jej adresu oraz klucza dostępu. Bez tego aplikacja uczciwie pokazuje, że działa tylko tryb lokalny. Serwer otrzymuje subskrypcję urządzenia i harmonogram, bez treści zadań, kontaktów i prowizji.
