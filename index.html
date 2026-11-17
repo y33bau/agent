@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Real Estate RPG">
-    <link rel="apple-touch-icon" href="image_generation_content/13773131596121703961">
+    <link rel="apple-touch-icon" href="./assets/icon_pwa.png">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -40,14 +40,16 @@
 
         body {
             background-color: var(--bg-obsidian);
+            /* TŁO Z OBRAZKA .png */
+            background-image: url('./assets/bg_obsidian.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             color: var(--text-main);
             min-height: 100vh;
             padding-top: env(safe-area-inset-top);
             padding-bottom: calc(110px + env(safe-area-inset-bottom));
             overflow-x: hidden;
-            background-image: url('image_generation_content/8981768286863944199');
-            background-size: cover;
-            background-attachment: fixed;
         }
 
         header {
@@ -89,7 +91,8 @@
         /* POGODA HERO TILE */
         .weather-hero-card {
             position: relative;
-            background: linear-gradient(135deg, rgba(20, 18, 26, 0.95), rgba(10, 8, 14, 0.98)), url('image_generation_content/47208ac9.jpeg');
+            /* TŁO Z OBRAZKA .png */
+            background: linear-gradient(135deg, rgba(20, 18, 26, 0.95), rgba(10, 8, 14, 0.98)), url('./assets/header_moon.png');
             background-size: cover;
             background-position: center;
             border: 1px solid var(--border-active);
@@ -190,7 +193,7 @@
             line-height: 1.4;
         }
 
-        /* DUŻE KAFELKI MENU GŁÓWNEGO */
+        /* KAFELKI */
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -218,7 +221,6 @@
         .tile-icon { font-size: 32px; margin-bottom: 10px; display: block; }
         .tile-title { font-family: 'Cinzel', serif; font-size: 12px; color: var(--gold); font-weight: 700; letter-spacing: 0.5px; }
 
-        /* Glass Cards */
         .glass-card {
             background: var(--glass-panel);
             backdrop-filter: blur(16px);
@@ -229,7 +231,6 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
-        /* Stats HUD */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -308,7 +309,6 @@
         .quest-title { font-size: 12px; font-weight: 600; color: var(--text-main); margin-bottom: 3px; }
         .quest-meta { font-size: 10px; color: var(--text-muted); }
 
-        /* DOLNY PANEL NAWIGACYJNY (DOCK) - 5 PRZYCISKÓW */
         .bottom-dock {
             position: fixed;
             bottom: 16px;
@@ -357,7 +357,7 @@
 
     <header>
         <div class="logo-title">REVENUE & EMPIRE</div>
-        <div id="datetime-display" class="subtitle">Rynek Nieruchomości | Łańcut</div>
+        <div id="datetime-display" class="subtitle">Syndykat Nieruchomości | Łańcut</div>
     </header>
 
     <div class="container">
@@ -374,7 +374,8 @@
                     <div class="temp-display" id="live-temp">--°C</div>
                     <div class="condition-text" id="live-condition">Pobieranie danych rynkowych...</div>
                 </div>
-                <img src="image_generation_content/47208ac9.jpeg" alt="Faza Księżyca" class="weather-graphic-icon" onerror="this.style.display='none';">
+                <!-- ZASÓB .png -->
+                <img src="./assets/header_moon.png" alt="Faza Księżyca" class="weather-graphic-icon" onerror="this.style.display='none';">
             </div>
 
             <div class="weather-footer-details">
@@ -383,7 +384,7 @@
             </div>
         </div>
 
-        <!-- OPIERDALACZ / ALARM (Gdy brak kontaktu w ciągu godziny) -->
+        <!-- OPIERDALACZ / ALARM -->
         <div id="roast-banner">
             <div class="roast-title">🚨 PROTOKÓŁ DYSCYPLINY SYNDYKATU</div>
             <div id="roast-text" class="roast-text">Mija kolejna godzina, a brak wpisu o kontakcie z klientem! Prowizje same nie wskoczą na konto. Weź telefon do ręki i wykręć numer do nowego leada, dopóki konkurencja śpi! (-5 HP)</div>
@@ -411,7 +412,7 @@
             </div>
 
             <div class="progress-group">
-                <div class="progress-label"><span>ENERGIACJA / HP</span><span id="hp-text">85 / 100</span></div>
+                <div class="progress-label"><span>ENERGIA / HP</span><span id="hp-text">85 / 100</span></div>
                 <div class="bar-track"><div class="bar-fill fill-hp" id="hp-bar" style="width: 85%;"></div></div>
             </div>
 
@@ -433,7 +434,7 @@
             <button class="btn-action" onclick="openModal('loot-modal')">🎁 Bonus Biura</button>
         </div>
 
-        <!-- GŁÓWNE ZAKŁADKI (START / DASHBOARD) -->
+        <!-- GŁÓWNE ZAKŁADKI (START) -->
         <div id="tab-home" class="tab-view active">
             <div class="section-header"><span class="section-title">Centrum Dowodzenia Syndykatu</span></div>
             <div class="dashboard-grid">
@@ -450,12 +451,10 @@
                     <div class="tile-title">Blokada Skrola</div>
                 </div>
                 <div class="tile-card" onclick="switchTab('shop', document.querySelectorAll('.dock-btn')[4])">
-                    <span class="tile-icon">🏆</span>
-                    <div class="tile-title">Nagrody Prowizji</div>
+                    <span class="tile-icon">🪙</span>
+                    <div class="tile-title">Sklep / Nagrody</div>
                 </div>
             </div>
-
-            <!-- OPCJA WYZEROWANIA APLIKACJI -->
             <button class="btn-action" style="width: 100%; background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: var(--danger); margin-top: 10px;" onclick="resetApp()">⚠️ Wyzeruj Postępy Agenta</button>
         </div>
 
@@ -503,7 +502,8 @@
             <div class="section-header"><span class="section-title">Wydaj Zarobioną Prowizję</span></div>
             <div class="quest-card">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <img src="image_generation_content/14885394587259587265" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+                    <!-- ZASÓB .png -->
+                    <img src="./assets/icon_reward.png" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-subtle);" onerror="this.style.display='none';">
                     <div>
                         <div class="quest-title">Wyjście na obiad / restaurację</div>
                         <div class="quest-meta">Nagroda za cele (Koszt: 300 zł)</div>
@@ -513,7 +513,8 @@
             </div>
             <div class="quest-card">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <img src="image_generation_content/5594749731608925098" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+                    <!-- ZASÓB .png -->
+                    <img src="./assets/icon_reward.png" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-subtle);" onerror="this.style.display='none';">
                     <div>
                         <div class="quest-title">2 godziny wolnego / Gry / Netflix</div>
                         <div class="quest-meta">Regeneracja (Koszt: 500 zł)</div>
@@ -524,7 +525,7 @@
         </div>
     </div>
 
-    <!-- DOLNY DOCK NAWIGACYJNY (5 PRZYCISKÓW) -->
+    <!-- DOLNY DOCK NAWIGACYJNY -->
     <nav class="bottom-dock">
         <button class="dock-btn active" onclick="switchTab('home', this)">
             <span class="dock-icon">⚡</span>Start
@@ -539,7 +540,7 @@
             <span class="dock-icon">🔥</span>Blokada
         </button>
         <button class="dock-btn" onclick="switchTab('shop', this)">
-            <span class="dock-icon">🏆</span>Sklep
+            <span class="dock-icon">🪙</span>Sklep
         </button>
     </nav>
 
@@ -738,7 +739,7 @@
         }
 
         function resetApp() {
-            if (confirm("Czy na pewno chcesz wyzerować postępy agenta i wyczyścić localStorage?")) {
+            if (confirm("Czy na pewno chcesz wyzerować postępy agenta?")) {
                 localStorage.removeItem('realestate_agent');
                 localStorage.removeItem('realestate_quests');
                 location.reload();
