@@ -1,0 +1,25 @@
+{
+  "id": "./",
+  "name": "AGENT EMPIRE — Twój następny ruch",
+  "short_name": "AGENT EMPIRE",
+  "lang": "pl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#121713",
+  "theme_color": "#121713",
+  "icons": [
+    {
+      "src": "./assets/empire.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/empire-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
