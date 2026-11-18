@@ -99,3 +99,27 @@ dialog{background:#172e42;border-color:#dfc58a59}
  .hero .btn{min-height:44px}
  .nav-item{font-size:10px;min-height:50px}
 }
+
+.dashboard-main{display:grid;gap:12px;min-width:0}
+.dashboard-main .kpi-grid{margin-block:0}
+.dashboard-weather{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:16px 18px}
+.dashboard-weather h2{font-size:clamp(16px,3vw,22px);line-height:1.2}
+.dashboard-weather h2:first-letter{text-transform:uppercase}
+#weather-location,#life-weather small{color:var(--muted)}
+#life-weather{text-align:right;font-size:12px}
+#life-weather small,.weather-temperature{display:block}
+.weather-temperature{font-size:clamp(19px,4vw,28px);color:var(--cream)}
+.weather-options{grid-column:1/-1;color:var(--muted)}
+.weather-options summary{cursor:pointer;width:max-content;padding:5px 0}
+.weather-options .row{margin-top:8px;gap:8px}
+.dashboard-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.dashboard-actions .btn{justify-content:center;min-height:44px;margin:0;text-align:center}
+.portal-group h2{font:400 24px Georgia,serif;margin:0 0 10px}
+.portal-group .life-links{grid-template-columns:repeat(2,minmax(0,1fr));margin:0}
+.portal-group .life-links .life-link{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:76px!important;padding:12px;background:#1c374c!important;color:var(--cream)!important}
+.portal-mark{display:grid;place-items:center;background:#a9bbca;border-radius:9px;width:56px;height:44px;padding:5px}
+.portal-mark img{display:block;width:100%;height:100%;min-height:0;object-fit:contain}
+.portal-group .life-link strong{font-weight:600;font-family:inherit;font-size:15px;line-height:1.2;margin:0 0 4px;color:var(--cream)!important}
+.portal-group .life-link small{color:var(--muted)!important;font-size:12px}
+.portal-arrow{color:var(--gold)}
+@media(max-width:650px){.portal-group .life-links{grid-template-columns:minmax(0,1fr)}}

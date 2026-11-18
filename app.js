@@ -38,7 +38,7 @@ function celebrate(earned){
 }
 function dateLabel(day){return new Date(day+'T12:00:00').toLocaleDateString('pl-PL',{day:'numeric',month:'short'});}
 function datePill(day){return '<span class="date-pill '+(day<today()?'overdue':'')+'">'+(day===today()?'Dzisiaj':day<today()?'Do kontaktu · '+dateLabel(day):dateLabel(day))+'</span>';}
-function heading(title,sub,action='log',label='Zapisz działanie'){return '<div class="page-heading"><div><div class="eyebrow">'+esc(new Date().toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'}))+' / ŁAŃCUT</div><h1>'+title+'</h1><p class="subtitle">'+sub+'</p></div>'+(action?'<button class="btn gold" data-action="'+action+'">'+icon('plus')+label+'</button>':'')+'</div>';}
+function heading(title,sub,action='log',label='Zapisz działanie'){return '<div class="page-heading"><div><h1>'+title+'</h1><p class="subtitle">'+sub+'</p></div>'+(action?'<button class="btn gold" data-action="'+action+'">'+icon('plus')+label+'</button>':'')+'</div>';}
 function empty(title,sub,action,label,which='target'){return '<div class="empty">'+icon(which)+'<h3>'+title+'</h3><p>'+sub+'</p>'+(action?'<button class="btn ghost" data-action="'+action+'">'+label+'</button>':'')+'</div>';}
 function city(full=false){
  const {office,studio,network}=state.buildings,h=office*15;
@@ -118,8 +118,18 @@ function drawMove(){
 }
 function dashboardView(){
  const due=C.dueLeads(state);
- return heading('Twój następny ruch, '+esc(state.settings.name)+'.','Działania pod kontrolą. Wyniki zbudujesz krok po kroku.')+(notice?'<div class="notice">'+esc(notice)+'</div>':'')+
- '<div class="dashboard"><div><section class="panel hero"><div class="hero-kicker">TWÓJ RYNEK. TWÓJ RUCH.</div><div class="hero-copy"><div class="eyebrow">REVENUE & EMPIRE / AGENT OS</div><h2>Dziś budujesz<br><em>jutrzejszą prowizję.</em></h2><p class="subtitle">Nie czekaj na idealny moment. Pierwszy telefon uruchamia cały łańcuch.</p><div class="row"><button class="btn gold" data-action="log-call">'+icon('phone')+'Zapisz telefon</button><button class="btn ghost" data-action="focus">'+icon('clock')+'Blok akwizycji</button></div></div>'+city(true)+'</section><div class="row wrap"><button class="btn gold" data-action="draw-move">✦ Wylosuj działanie</button></div>'+kpis()+'<button class="btn text" data-tab="portals">Portale ↗</button>'+'<div class="stack">'+'<section class="panel"><div class="section-head"><h2>Do oddzwonienia dziś</h2><button class="btn text" data-tab="pipeline" data-queue="today">Otwórz CRM ↗</button></div><div class="next-list">'+(due.length?due.slice(0,4).map(nextRow).join(''):empty('Tu zaczyna się Twój lejek.','Dodaj kontakt i ustal, kiedy zrobisz następny ruch.','lead-add','Dodaj pierwszy kontakt','users'))+'</div></section></div></div><div class="stack">'+profile()+'</div></div>';
+ return heading('Pulpit','',null)+(notice?'<div class="notice">'+esc(notice)+'</div>':'')+
+  '<div class="dashboard"><div class="dashboard-main">'+
+  '<section class="panel dashboard-weather" id="dashboard-weather" aria-label="Data i pogoda"></section>'+
+  '<div class="dashboard-actions" aria-label="Szybkie działania">'+
+  '<button class="btn gold" data-action="draw-move">✦ Wylosuj działanie</button>'+
+  '<button class="btn ghost" data-action="log-call">'+icon('phone')+'Zapisz telefon</button>'+
+  '<button class="btn ghost" data-action="focus">'+icon('clock')+'Blok akwizycji</button>'+
+  '<button class="btn ghost" data-action="log">Inne działanie</button></div>'+
+  kpis()+'<section class="panel"><div class="section-head"><h2>Do oddzwonienia</h2>'+
+  '<button class="btn text" data-tab="pipeline">Otwórz CRM ↗</button></div><div class="next-list">'+
+  (due.length?due.slice(0,4).map(nextRow).join(''):empty('Brak telefonów na dziś.','Dodaj kontakt lub zaplanuj oddzwonienie w CRM.','lead-add','Dodaj kontakt','users'))+
+  '</div></section></div><div class="stack">'+profile()+'</div></div>';
 }
 function leadCard(lead){
  const id=esc(lead.id);
