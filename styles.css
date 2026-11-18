@@ -15,3 +15,18 @@
 .mobile-settings>span:first-child{font-size:19px;line-height:1}
 .workspace{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
 }
+
+/* CRM */
+.crm-toolbar{display:grid;gap:12px;margin-bottom:22px}
+.crm-toolbar .search{width:100%;min-height:48px;font-size:16px}
+.crm-quick,.crm-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.crm-quick .filter,.crm-card-actions .btn,.crm-toolbar summary{min-height:44px;font-size:14px}
+.crm-toolbar summary{display:list-item;cursor:pointer;padding:12px 0;color:var(--muted)}
+.crm-toolbar details .pipeline-summary{margin:10px 0 0}
+#lead-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#lead-grid .lead-card{padding:22px}
+#lead-grid .lead-card h3{font-size:22px}
+#lead-grid .next-action{font-size:15px;overflow-wrap:anywhere}
+.crm-card-actions{margin-top:16px}
+.crm-card-actions .btn{justify-content:center;text-align:center;padding-inline:6px}
+@media(max-width:650px){#lead-grid{grid-template-columns:minmax(0,1fr)}}

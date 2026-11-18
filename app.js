@@ -121,7 +121,15 @@ function dashboardView(){
  return heading('Twój następny ruch, '+esc(state.settings.name)+'.','Działania pod kontrolą. Wyniki zbudujesz krok po kroku.')+(notice?'<div class="notice">'+esc(notice)+'</div>':'')+
  '<div class="dashboard"><div><section class="panel hero"><div class="hero-kicker">TWÓJ RYNEK. TWÓJ RUCH.</div><div class="hero-copy"><div class="eyebrow">REVENUE & EMPIRE / AGENT OS</div><h2>Dziś budujesz<br><em>jutrzejszą prowizję.</em></h2><p class="subtitle">Nie czekaj na idealny moment. Pierwszy telefon uruchamia cały łańcuch.</p><div class="row"><button class="btn gold" data-action="log-call">'+icon('phone')+'Zapisz telefon</button><button class="btn ghost" data-action="focus">'+icon('clock')+'Blok akwizycji</button></div></div>'+city(true)+'</section><div class="row wrap"><button class="btn gold" data-action="draw-move">✦ Wylosuj działanie</button></div>'+kpis()+'<button class="btn text" data-tab="portals">Portale ↗</button>'+'<div class="stack">'+'<section class="panel"><div class="section-head"><h2>Do oddzwonienia dziś</h2><button class="btn text" data-tab="pipeline" data-queue="today">Otwórz CRM ↗</button></div><div class="next-list">'+(due.length?due.slice(0,4).map(nextRow).join(''):empty('Tu zaczyna się Twój lejek.','Dodaj kontakt i ustal, kiedy zrobisz następny ruch.','lead-add','Dodaj pierwszy kontakt','users'))+'</div></section></div></div><div class="stack">'+profile()+'</div></div>';
 }
-function leadCard(l){return '<article class="panel lead-card"><div class="section-head"><span class="stage-badge">'+C.STAGES.find(s=>s[0]===l.stage)[1]+'</span><button class="icon-btn" data-action="client-card" data-id="'+esc(l.id)+'" aria-label="Otwórz kartę klienta '+esc(l.name)+'">⋯</button></div><h3>'+esc(l.name)+'</h3><p class="lead-property">'+esc(l.property)+' · '+esc(l.area)+'</p><div class="next-action"><small>NASTĘPNY KROK</small>'+esc(l.nextAction||'Ustal kolejny krok')+'</div><div class="row between">'+datePill(l.nextDate)+'<button class="btn small ghost" data-action="log-lead" data-id="'+esc(l.id)+'">Zapisz działanie ↗</button></div></article>';}
+function leadCard(lead){
+ const id=esc(lead.id);
+ const stage=C.STAGES.find(([key])=>key===lead.stage)[1];
+ return '<article class="panel lead-card"><div class="section-head"><span class="stage-badge">'+stage+'</span>'+datePill(lead.nextDate)+'</div>'+
+  '<h3>'+esc(lead.name)+'</h3><p class="lead-property">'+esc(lead.property)+' · '+esc(lead.area)+'</p>'+
+  '<div class="next-action"><small>NASTĘPNY KROK</small>'+esc(lead.nextAction||'Ustal kolejny krok')+'</div>'+
+  '<div class="crm-card-actions"><button class="btn gold" data-action="client-card" data-id="'+id+'">Otwórz kartę</button>'+
+  '<button class="btn ghost" data-action="log-lead" data-id="'+id+'">Zapisz telefon</button></div></article>';
+}
 function pipelineView(){
  const counts=C.STAGES.filter(x=>x[0]!=='lost').map(([id,title])=>'<button class="stage-count filter '+(leadFilter==='stage:'+id?'active':'')+'" data-lead-filter="stage:'+id+'"><strong>'+state.leads.filter(l=>!l.archived&&l.stage===id).length+'</strong>'+title+'</button>').join('');
  let leads=state.leads.filter(l=>leadFilter==='archive'?l.archived:!l.archived);
@@ -133,7 +141,16 @@ function pipelineView(){
  if(leadFilter.startsWith('stage:'))leads=leads.filter(l=>l.stage===leadFilter.slice(6));
  if(leadFilter==='won')leads=leads.filter(l=>l.stage==='won');
  leads=leads.filter(l=>(l.name+' '+l.area+' '+l.property).toLocaleLowerCase('pl').includes(search.toLocaleLowerCase('pl')));
- return heading('Relacje, które prowadzą dalej.','Każdy kontakt ma etap i konkretny następny krok.','lead-add','Dodaj kontakt')+'<div class="pipeline-summary">'+counts+'</div><div class="toolbar"><div class="filters">'+[['active','W toku'],['late','Zaległe'],['today','Dzisiaj'],['later','Nadchodzące'],['all','Wszystkie'],['won','Zamknięte'],['archive','Archiwum']].map(([v,l])=>'<button class="filter '+(leadFilter===v?'active':'')+'" data-lead-filter="'+v+'">'+l+'</button>').join('')+'</div><input class="search" aria-label="Szukaj kontaktu" placeholder="Szukaj po nazwie lub rejonie…" value="'+esc(search)+'"></div><div class="lead-grid" id="lead-grid">'+(leads.length?leads.map(leadCard).join(''):empty('W tym miejscu jest jeszcze przestrzeń.','Dodaj kontakt lub zmień filtr.','lead-add','Dodaj kontakt','users'))+'</div><p class="subtitle tiny">Dane kontaktów zapisują się na urządzeniu i mogą być synchronizowane po sparowaniu. Etap lejka możesz zmieniać bez naliczania punktów.</p>';
+ const filters=[['active','W toku'],['late','Zaległe'],['today','Dzisiaj'],['later','Nadchodzące']];
+ const extraFilters=[['all','Wszystkie'],['won','Zamknięte'],['archive','Archiwum']];
+ const filterButton=([id,label])=>'<button class="filter '+(leadFilter===id?'active':'')+'" aria-pressed="'+(leadFilter===id)+'" data-lead-filter="'+id+'">'+label+'</button>';
+ return heading('CRM','', 'lead-add','Dodaj kontakt')+
+  '<div class="crm-toolbar"><input class="search" aria-label="Szukaj kontaktu" placeholder="Szukaj kontaktu…" value="'+esc(search)+'">'+
+  '<div class="crm-quick">'+filters.map(filterButton).join('')+'</div>'+
+  '<details '+(leadFilter.startsWith('stage:')||extraFilters.some(([id])=>id===leadFilter)?'open':'')+'><summary>Więcej filtrów i etapy</summary>'+
+  '<div class="filters">'+extraFilters.map(filterButton).join('')+'</div><div class="pipeline-summary">'+counts+'</div></details></div>'+
+  '<div class="lead-grid" id="lead-grid">'+(leads.length?leads.map(leadCard).join(''):empty('Brak kontaktów w tym widoku.','Dodaj kontakt lub zmień filtr.','lead-add','Dodaj kontakt','users'))+'</div>';
+
 }
 function taskCard(t){
  const done=C.taskDone(state,t,today()),progress=C.taskProgress(state,t,today());
