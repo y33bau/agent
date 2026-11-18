@@ -57,10 +57,39 @@ function kpis(){
 function coach(){const d=C.totals(state,today()),hour=new Date().getHours();if(hour<8||hour>=19)return 'Na dziś wystarczy? Zapisz następny krok na jutro. Rano masz działać, a nie zgadywać, od czego zacząć.';if(d.calls===0)return state.settings.bold?'Panel nie wykona za Ciebie telefonu. Wybierz jeden kontakt. Numer, oddech, pierwszy ruch.':'Zacznij od jednego telefonu. Tylko jedna rozmowa na początek.';if(d.calls<state.settings.calls)return 'Masz już '+d.calls+' telefonów. Jeszcze '+(state.settings.calls-d.calls)+' do celu. Jeden numer naraz.';return 'Plan telefonów dowieziony. Teraz dopilnuj follow-upów — dobra rozmowa zasługuje na następny krok.';}
 function challengesPanel(){return '<section class="panel"><div class="section-head"><h2>Dzienny kontrakt</h2><span class="section-label">RESET O PÓŁNOCY</span></div>'+C.challenges(state).map((c,i)=>'<div class="mission"><div class="mission-title">'+icon(['phone','users','calendar'][i])+c.title+'<span class="mission-stats">'+c.current+' / '+c.target+'</span></div><div class="track"><div class="fill" style="width:'+Math.min(100,c.current/c.target*100)+'%"></div></div><div class="mission-foot"><span>+'+c.xp+' XP · +'+c.coins+' żetonów</span>'+(c.claimed?'<span style="color:var(--green)">✓ Bonus odebrany</span>':c.current>=c.target?'<button class="btn small gold" data-action="claim" data-id="'+c.id+'">Odbierz bonus</button>':'<span>Każdy ruch przybliża Cię do celu</span>')+'</div></div>').join('')+'</section>';}
 function nextRow(l){return '<article class="lead-row"><div class="lead-monogram">'+esc(l.name.slice(0,1).toUpperCase())+'</div><div class="lead-info"><strong>'+esc(l.name)+'</strong><p>'+esc(l.nextAction||'Ustal kolejny krok')+'</p></div>'+datePill(l.nextDate)+'<button class="icon-btn" data-action="log-lead" data-id="'+esc(l.id)+'" aria-label="'+esc('Zapisz kontakt: '+l.name)+'">'+icon('arrow')+'</button></article>';}
+const drawnMoves=new Set();
+function drawMove(){
+ const day=today();
+ const contacts=C.dueLeads(state,day).map(lead=>{
+  const number=lead.phone.replace(/[^+0-9]/g,'');
+  const phone=/^\+?\d{6,15}$/.test(number)?'<a class="btn gold" href="tel:'+number+'">Zadzwoń</a>':'';
+  return {key:'lead:'+lead.id,title:'Skontaktuj się z '+lead.name,detail:lead.nextAction,
+   actions:phone+'<button class="btn" data-action="log-lead" data-id="'+esc(lead.id)+'">Zapisz wynik telefonu</button><button class="btn" data-action="client-card" data-id="'+esc(lead.id)+'">Karta klienta</button>'};
+ });
+ const missions=state.tasks.filter(task=>C.taskAvailable(task,day)&&!C.taskDone(state,task,day)).map(task=>({
+  key:'task:'+task.id,title:task.title,detail:'Otwarta misja',
+  actions:'<button class="btn gold" data-action="draw-missions">Otwórz misje</button>'
+ }));
+ const fallback=[
+  {key:'focus',title:'Zacznij 5 minut akwizycji',detail:'Otwórz oferty i wybierz jeden kontakt do wykonania.',actions:state.focus?'<button class="btn" data-action="close">Wróć do timera</button>':'<button class="btn gold" data-action="focus-start" data-id="5">Uruchom timer</button>'},
+  {key:'new',title:'Dodaj jeden kontakt do CRM',detail:'Wpisz osobę, do której chcesz wrócić, i zaplanuj następny krok.',actions:'<button class="btn gold" data-action="lead-add">Dodaj kontakt</button>'}
+ ];
+ const pool=[...contacts,...missions];
+ const moves=pool.length?pool:fallback;
+ let available=moves.filter(move=>!drawnMoves.has(move.key));
+ if(!available.length){
+  const last=[...drawnMoves].at(-1);
+  drawnMoves.clear();
+  available=moves.length>1?moves.filter(move=>move.key!==last):moves;
+ }
+ const move=available[Math.floor(Math.random()*available.length)];
+ drawnMoves.add(move.key);
+ modal('Twój wylosowany ruch','<h3>'+esc(move.title)+'</h3><p class="subtitle">'+esc(move.detail)+'</p><div class="row wrap">'+move.actions+'<button class="btn ghost" data-action="draw-move">Losuj jeszcze raz</button></div>');
+}
 function dashboardView(){
  const due=C.dueLeads(state);
  return heading('Twój następny ruch, '+esc(state.settings.name)+'.','Działania pod kontrolą. Wyniki zbudujesz krok po kroku.')+(notice?'<div class="notice">'+esc(notice)+'</div>':'')+
- '<div class="dashboard"><div><section class="panel hero"><div class="hero-kicker">TWÓJ RYNEK. TWÓJ RUCH.</div><div class="hero-copy"><div class="eyebrow">REVENUE & EMPIRE / AGENT OS</div><h2>Dziś budujesz<br><em>jutrzejszą prowizję.</em></h2><p class="subtitle">Nie czekaj na idealny moment. Pierwszy telefon uruchamia cały łańcuch.</p><div class="row"><button class="btn gold" data-action="log-call">'+icon('phone')+'Zapisz telefon</button><button class="btn ghost" data-action="focus">'+icon('clock')+'Blok akwizycji</button></div></div>'+city(true)+'</section>'+kpis()+'<button class="btn text" data-tab="portals">Portale ↗</button>'+'<div class="stack">'+'<section class="panel"><div class="section-head"><h2>Do oddzwonienia dziś</h2><button class="btn text" data-tab="pipeline" data-queue="today">Otwórz CRM ↗</button></div><div class="next-list">'+(due.length?due.slice(0,4).map(nextRow).join(''):empty('Tu zaczyna się Twój lejek.','Dodaj kontakt i ustal, kiedy zrobisz następny ruch.','lead-add','Dodaj pierwszy kontakt','users'))+'</div></section></div></div><div class="stack">'+profile()+'</div></div>';
+ '<div class="dashboard"><div><section class="panel hero"><div class="hero-kicker">TWÓJ RYNEK. TWÓJ RUCH.</div><div class="hero-copy"><div class="eyebrow">REVENUE & EMPIRE / AGENT OS</div><h2>Dziś budujesz<br><em>jutrzejszą prowizję.</em></h2><p class="subtitle">Nie czekaj na idealny moment. Pierwszy telefon uruchamia cały łańcuch.</p><div class="row"><button class="btn gold" data-action="log-call">'+icon('phone')+'Zapisz telefon</button><button class="btn ghost" data-action="focus">'+icon('clock')+'Blok akwizycji</button></div></div>'+city(true)+'</section><div class="row wrap"><button class="btn gold" data-action="draw-move">✦ Wylosuj działanie</button></div>'+kpis()+'<button class="btn text" data-tab="portals">Portale ↗</button>'+'<div class="stack">'+'<section class="panel"><div class="section-head"><h2>Do oddzwonienia dziś</h2><button class="btn text" data-tab="pipeline" data-queue="today">Otwórz CRM ↗</button></div><div class="next-list">'+(due.length?due.slice(0,4).map(nextRow).join(''):empty('Tu zaczyna się Twój lejek.','Dodaj kontakt i ustal, kiedy zrobisz następny ruch.','lead-add','Dodaj pierwszy kontakt','users'))+'</div></section></div></div><div class="stack">'+profile()+'</div></div>';
 }
 function leadCard(l){return '<article class="panel lead-card"><div class="section-head"><span class="stage-badge">'+C.STAGES.find(s=>s[0]===l.stage)[1]+'</span><button class="icon-btn" data-action="client-card" data-id="'+esc(l.id)+'" aria-label="Otwórz kartę klienta '+esc(l.name)+'">⋯</button></div><h3>'+esc(l.name)+'</h3><p class="lead-property">'+esc(l.property)+' · '+esc(l.area)+'</p><div class="next-action"><small>NASTĘPNY KROK</small>'+esc(l.nextAction||'Ustal kolejny krok')+'</div><div class="row between">'+datePill(l.nextDate)+'<button class="btn small ghost" data-action="log-lead" data-id="'+esc(l.id)+'">Zapisz działanie ↗</button></div></article>';}
 function pipelineView(){
@@ -168,6 +197,8 @@ document.addEventListener('click',e=>{
  const action=button.dataset.action,id=button.dataset.id;
  switch(action){
  case 'close':close();break;
+ case 'draw-move':drawMove();break;
+ case 'draw-missions':close();tab='missions';taskFilter='active';render();$('#main').focus();window.scrollTo(0,0);break;
  case 'settings':settings();break;
  case 'lead-add':leadForm();break;
  case 'client-card':clientCard(id);break;
