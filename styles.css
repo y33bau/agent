@@ -36,3 +36,66 @@
 /* The agency and settings bar belongs in the More menu. */
 .workspace:not(:has(#main[data-view="more"])) > .topbar{display:none}
 @media(max-width:760px){.workspace:not(:has(#main[data-view="more"])){padding-top:env(safe-area-inset-top,0px)}}
+
+/* ATRIA: midnight blue, ivory and champagne. */
+:root{
+ --bg:#101f2e;
+ --panel:#182e41;
+ --cream:#f1e8d8;
+ --muted:#b5cbdb;
+ --line:#afcfe626;
+ --gold:#dfc58a;
+ --radius:24px;
+}
+body{background:radial-gradient(ellipse at 72% 0%,#203e55 0%,transparent 48rem),var(--bg)}
+#main{padding-top:clamp(26px,4vw,54px)}
+.page-heading h1{
+ font-family:Georgia,"Times New Roman",serif;
+ font-size:clamp(30px,5vw,56px);
+ font-weight:400;
+ line-height:1.06;
+ letter-spacing:-.045em;
+}
+.page-heading .eyebrow{color:var(--gold)}
+.page-heading .subtitle{margin-top:8px;color:var(--muted)}
+.panel,.life-card{
+ background:linear-gradient(145deg,#223c50,#172d40);
+ border:1px solid var(--line);
+ box-shadow:0 12px 30px #07152240;
+}
+.panel.hero{
+ border-color:#dfc58a59;
+ background:radial-gradient(ellipse at 88% 80%,#3e5f7180,transparent 65%),linear-gradient(118deg,#142637 20%,#223f55);
+ box-shadow:0 22px 50px #08152166,inset 0 1px #f1e8d81e;
+}
+.hero h2{font-size:clamp(35px,4.1vw,57px);line-height:1.03;max-width:none}
+.hero .subtitle{font-size:13px;color:var(--muted)}
+.hero-art{filter:drop-shadow(0 0 16px #dfc58a40)}
+.btn.gold,.mobile-settings{
+ background:linear-gradient(135deg,#f0daa5,#c7a363);
+ color:#172536;
+ border:1px solid #f1d9a57a;
+ box-shadow:0 4px 14px #08152136;
+}
+[data-action="draw-move"]{margin:12px 0 4px;min-height:46px}
+#lead-grid .lead-card h3{font:400 clamp(24px,4vw,30px)/1.15 Georgia,"Times New Roman",serif}
+#lead-grid .next-action{background:#0e21336e;border-color:#afcfe628}
+.crm-quick .filter.active{border-color:#dfc58a75;color:var(--gold)}
+.life-links .life-link{
+ min-height:145px!important;
+ border-color:#dfc58a55;
+ background:linear-gradient(145deg,#adbfcc,#8ca4b7)!important;
+ box-shadow:0 10px 22px #08152136;
+}
+.life-links .life-link strong{font-size:clamp(16px,2vw,23px)}
+dialog{background:#172e42;border-color:#dfc58a59}
+.nav-item.active{background:#dfc58a1c;color:var(--gold)}
+@media(max-width:650px){
+ .page-heading{align-items:flex-start}
+ .page-heading>.btn{min-height:44px}
+ .hero-copy{width:100%}
+ .hero h2{max-width:11ch}
+ .hero-art{opacity:.34}
+ .hero .btn{min-height:44px}
+ .nav-item{font-size:10px;min-height:50px}
+}
