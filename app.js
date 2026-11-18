@@ -124,7 +124,8 @@ function dashboardView(){
 function leadCard(lead){
  const id=esc(lead.id);
  const stage=C.STAGES.find(([key])=>key===lead.stage)[1];
- return '<article class="panel lead-card"><div class="section-head"><span class="stage-badge">'+stage+'</span>'+datePill(lead.nextDate)+'</div>'+
+ const role=C.CASE_ROLES[lead.role];
+ return '<article class="panel lead-card"><div class="section-head"><span class="stage-badge">'+(role?role+' · ':'')+stage+'</span>'+datePill(lead.nextDate)+'</div>'+
   '<h3>'+esc(lead.name)+'</h3><p class="lead-property">'+esc(lead.property)+' · '+esc(lead.area)+'</p>'+
   '<div class="next-action"><small>NASTĘPNY KROK</small>'+esc(lead.nextAction||'Ustal kolejny krok')+'</div>'+
   '<div class="crm-card-actions"><button class="btn gold" data-action="client-card" data-id="'+id+'">Otwórz kartę</button>'+
@@ -138,6 +139,7 @@ function pipelineView(){
   const day=today();
   leads=leads.filter(l=>!['won','lost'].includes(l.stage)&&(leadFilter==='late'?l.nextDate<day:leadFilter==='today'?l.nextDate===day:l.nextDate>day)).sort((a,b)=>a.nextDate.localeCompare(b.nextDate));
  }
+ if(leadFilter.startsWith('role:'))leads=leads.filter(l=>l.role===leadFilter.slice(5));
  if(leadFilter.startsWith('stage:'))leads=leads.filter(l=>l.stage===leadFilter.slice(6));
  if(leadFilter==='won')leads=leads.filter(l=>l.stage==='won');
  leads=leads.filter(l=>(l.name+' '+l.area+' '+l.property).toLocaleLowerCase('pl').includes(search.toLocaleLowerCase('pl')));
@@ -147,8 +149,8 @@ function pipelineView(){
  return heading('CRM','', 'lead-add','Dodaj kontakt')+
   '<div class="crm-toolbar"><input class="search" aria-label="Szukaj kontaktu" placeholder="Szukaj kontaktu…" value="'+esc(search)+'">'+
   '<div class="crm-quick">'+filters.map(filterButton).join('')+'</div>'+
-  '<details '+(leadFilter.startsWith('stage:')||extraFilters.some(([id])=>id===leadFilter)?'open':'')+'><summary>Więcej filtrów i etapy</summary>'+
-  '<div class="filters">'+extraFilters.map(filterButton).join('')+'</div><div class="pipeline-summary">'+counts+'</div></details></div>'+
+  '<details '+(leadFilter.startsWith('stage:')||leadFilter.startsWith('role:')||extraFilters.some(([id])=>id===leadFilter)?'open':'')+'><summary>Więcej filtrów i etapy</summary>'+
+  '<div class="filters">'+extraFilters.concat(Object.entries(C.CASE_ROLES).map(([id,label])=>['role:'+id,label])).map(filterButton).join('')+'</div><div class="pipeline-summary">'+counts+'</div></details></div>'+
   '<div class="lead-grid" id="lead-grid">'+(leads.length?leads.map(leadCard).join(''):empty('Brak kontaktów w tym widoku.','Dodaj kontakt lub zmień filtr.','lead-add','Dodaj kontakt','users'))+'</div>';
 
 }
@@ -173,14 +175,32 @@ function moreView(){
  return heading('Więcej','')+'<div class="row wrap">'+tabs.slice(5).map(([id,title])=>'<button class="btn" data-tab="'+id+'">'+title+'</button>').join('')+'<button class="btn" data-action="settings">Ustawienia</button></div><div class="stack">'+profile()+challengesPanel()+
  '<section class="panel money-panel"><div class="section-head"><h2>Prowizje miesiąca</h2>'+icon('chart')+'</div><div class="money-number">'+money(stats.commissionGrosz)+'</div><p class="money-caption">Rzeczywiste kwoty wpisane przy zamkniętych transakcjach. Żetony gry nie są pieniędzmi.</p><div class="target-line"><span>Twój cel: '+money(state.settings.monthlyGoal*100)+'</span><span>'+Math.round(p)+'%</span></div><div class="track"><div class="fill" style="width:'+p+'%"></div></div><button class="btn text" data-action="log-sale" style="margin-top:12px">Zapisz transakcję ↗</button></section>'+'</div>';
 }
+function caseSummary(lead){
+ const seeker=['buyer','tenant'].includes(lead.role);
+ const fields=[C.CASE_ROLES[lead.role],lead.price&&((seeker?'Budżet do ':'Cena ')+money(lead.price*100)),
+  lead.size&&((seeker?'Od ':'')+lead.size+' m²'),lead.rooms&&((seeker?'Od ':'')+lead.rooms+' pok.')].filter(Boolean);
+ return fields.length?'<p class="subtitle">'+esc(fields.join(' · '))+'</p>':'';
+}
+function caseDetailsForm(lead){
+ const roleOptions=Object.entries(C.CASE_ROLES).map(([id,label])=>'<option value="'+id+'" '+(lead?.role===id?'selected':'')+'>'+label+'</option>');
+ const fields=[['price','Cena lub maks. budżet (zł)',1000000000],['size','Metraż lub minimum (m²)',100000],['rooms','Pokoje lub minimum',100]];
+ return '<details '+(lead?.role?'open':'')+'><summary>Szczegóły sprawy</summary><label class="field">Rola klienta<select name="role"><option value="">Wybierz rolę</option>'+roleOptions.join('')+'</select></label>'+
+  '<div class="form-grid">'+fields.map(([name,label,max])=>'<label class="field">'+label+'<input type="number" inputmode="numeric" min="1" max="'+max+'" name="'+name+'" value="'+esc(lead?.[name]??'')+'"></label>').join('')+'</div>'+
+  '<p class="subtitle">Dla najmu podaj miesięczną kwotę. Do dopasowania używamy nazwy rejonu i rodzaju nieruchomości.</p></details>';
+}
 function clientCard(id){
  const lead=state.leads.find(item=>item.id===id);
  if(!lead)return;
  const clientId=lead.clientId||lead.id;
  const cases=state.leads.filter(item=>(item.clientId||item.id)===clientId);
  const ids=new Set(cases.map(item=>item.id));
+ const matches=C.matchingCases(lead,state.leads);
+ const matchingPanel=lead.role?'<h3>Pasujące sprawy</h3>'+(matches.length?matches.map(item=>
+  '<section class="panel"><button class="btn text" data-action="client-card" data-id="'+esc(item.id)+'">'+esc(item.name+' · '+item.property+' · '+item.area)+'</button>'+caseSummary(item)+'</section>'
+ ).join(''):'<p>Uzupełnij rejon, rodzaj i kwotę w obu sprawach. Dopasowania uwzględniają też podane minimum metrażu i pokoi.</p>'):'';
+
  const history=state.activities.filter(item=>ids.has(item.leadId)&&!item.voided).sort((a,b)=>b.time-a.time);
- modal(lead.name,'<p>'+esc(lead.phone)+'</p><div class="row wrap"><button class="btn" data-action="lead-edit" data-id="'+esc(id)+'">Edytuj sprawę</button><button class="btn" data-action="case-add" data-id="'+esc(id)+'">Dodaj sprawę</button><button class="btn" data-action="log-lead" data-id="'+esc(id)+'">Zapisz kontakt</button></div><h3>Sprawy i nieruchomości</h3>'+cases.map(item=>'<section class="panel"><button class="btn text" data-action="client-card" data-id="'+esc(item.id)+'">'+esc(item.property+' · '+item.area)+'</button><p>'+esc(C.STAGES.find(([stage])=>stage===item.stage)[1])+' · '+esc(item.nextDate)+' · '+esc(item.nextAction)+'</p><p>'+esc(item.notes)+'</p></section>').join('')+'<h3>Historia kontaktu</h3>'+(history.length?history.map(item=>'<p>'+esc(item.day+' · '+C.TYPES[item.type].label+' · '+({reached:'Rozmowa',noanswer:'Brak odpowiedzi',declined:'Odmowa',done:'Zapisano'}[item.outcome])+(item.note?' · '+item.note:''))+'</p>').join(''):'<p>Brak zapisanych działań.</p>'));
+ modal(lead.name,'<p>'+esc(lead.phone)+'</p><div class="row wrap"><button class="btn" data-action="lead-edit" data-id="'+esc(id)+'">Edytuj sprawę</button><button class="btn" data-action="case-add" data-id="'+esc(id)+'">Dodaj sprawę</button><button class="btn" data-action="log-lead" data-id="'+esc(id)+'">Zapisz kontakt</button></div><h3>Sprawy i nieruchomości</h3>'+cases.map(item=>'<section class="panel"><button class="btn text" data-action="client-card" data-id="'+esc(item.id)+'">'+esc(item.property+' · '+item.area)+'</button>'+caseSummary(item)+'<p>'+esc(C.STAGES.find(([stage])=>stage===item.stage)[1])+' · '+esc(item.nextDate)+' · '+esc(item.nextAction)+'</p><p>'+esc(item.notes)+'</p></section>').join('')+matchingPanel+'<h3>Historia kontaktu</h3>'+(history.length?history.map(item=>'<p>'+esc(item.day+' · '+C.TYPES[item.type].label+' · '+({reached:'Rozmowa',noanswer:'Brak odpowiedzi',declined:'Odmowa',done:'Zapisano'}[item.outcome])+(item.note?' · '+item.note:''))+'</p>').join(''):'<p>Brak zapisanych działań.</p>'));
 }
 const tabs=[['dashboard','Pulpit','grid'],['pipeline','CRM','users'],['field','Teren','phone'],['portals','Portale','building'],['more','Więcej','grid'],['missions','Misje','target'],['empire','Imperium','building'],['rewards','Nagrody','gift'],['progress','Postęp','chart']];
 function render(){
@@ -197,7 +217,7 @@ function close(){if($('#modal').open)$('#modal').close();if(lastTrigger?.isConne
 function leadForm(id,source){
  const l=state.leads.find(l=>l.id===id);
  modal(l?'Następny krok w tej relacji.':'Nowy kontakt. Nowa możliwość.',
- '<form id="lead-form" data-id="'+esc(id||'')+'" data-client="'+esc(source?.clientId||source?.id||'')+'"><label class="field">Nazwa lub pseudonim<input name="name" maxlength="100" required value="'+esc((l||source)?.name||'')+'" placeholder="Np. Właściciel · mieszkanie centrum" autofocus></label><div class="form-grid"><label class="field">Telefon (opcjonalnie)<input name="phone" type="tel" maxlength="40" value="'+esc((l||source)?.phone||'')+'"></label><label class="field">Rejon<input name="area" maxlength="100" value="'+esc(l?.area||'Łańcut')+'"></label></div><div class="form-grid"><label class="field">Nieruchomość<input name="property" maxlength="100" value="'+esc(l?.property||'Mieszkanie')+'"></label><label class="field">Etap<select name="stage">'+C.STAGES.map(([v,x])=>'<option value="'+v+'" '+(l?.stage===v?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div><div class="form-grid"><label class="field">Następny kontakt<input name="nextDate" type="date" required value="'+esc(l?.nextDate||today())+'"></label><label class="field">Konkretny następny krok<input name="nextAction" maxlength="200" value="'+esc(l?.nextAction||'Wykonaj pierwszy telefon')+'"></label></div><label class="field">Notatka<textarea name="notes" maxlength="2000" placeholder="Co warto pamiętać przed rozmową?">'+esc(l?.notes||'')+'</textarea><small>Dane zapisują się na urządzeniu; po włączeniu synchronizacji trafiają też do szyfrowanej chmury. Zapis etapu nie nalicza punktów ani prowizji.</small></label><div class="form-actions">'+(l?'<button class="btn danger" type="button" data-action="lead-archive" data-id="'+esc(l.id)+'">'+(l.archived?'Przywróć':'Archiwizuj')+'</button>':'')+'<button class="btn gold" type="submit">Zapisz kontakt</button></div></form>');
+ '<form id="lead-form" data-id="'+esc(id||'')+'" data-client="'+esc(source?.clientId||source?.id||'')+'"><label class="field">Nazwa lub pseudonim<input name="name" maxlength="100" required value="'+esc((l||source)?.name||'')+'" placeholder="Np. Właściciel · mieszkanie centrum" autofocus></label><div class="form-grid"><label class="field">Telefon (opcjonalnie)<input name="phone" type="tel" maxlength="40" value="'+esc((l||source)?.phone||'')+'"></label><label class="field">Rejon<input name="area" maxlength="100" value="'+esc(l?.area||'Łańcut')+'"></label></div><div class="form-grid"><label class="field">Nieruchomość<input name="property" maxlength="100" value="'+esc(l?.property||'Mieszkanie')+'"></label><label class="field">Etap<select name="stage">'+C.STAGES.map(([v,x])=>'<option value="'+v+'" '+(l?.stage===v?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div><div class="form-grid"><label class="field">Następny kontakt<input name="nextDate" type="date" required value="'+esc(l?.nextDate||today())+'"></label><label class="field">Konkretny następny krok<input name="nextAction" maxlength="200" value="'+esc(l?.nextAction||'Wykonaj pierwszy telefon')+'"></label></div>'+caseDetailsForm(l)+'<label class="field">Notatka<textarea name="notes" maxlength="2000" placeholder="Co warto pamiętać przed rozmową?">'+esc(l?.notes||'')+'</textarea><small>Dane zapisują się na urządzeniu; po włączeniu synchronizacji trafiają też do szyfrowanej chmury. Zapis etapu nie nalicza punktów ani prowizji.</small></label><div class="form-actions">'+(l?'<button class="btn danger" type="button" data-action="lead-archive" data-id="'+esc(l.id)+'">'+(l.archived?'Przywróć':'Archiwizuj')+'</button>':'')+'<button class="btn gold" type="submit">Zapisz kontakt</button></div></form>');
 }
 function logForm(type=null,leadId=null){
  if(!type){modal('Jaki ruch wykonałeś?','<p class="subtitle">Punkty za rzeczywistą pracę. Prowizja dopiero po wpisaniu transakcji.</p><div class="choice-grid">'+Object.entries(C.TYPES).map(([id,t])=>'<button class="choice" data-action="log-type" data-id="'+id+'">'+icon(t.icon)+'<strong>'+t.label+'</strong><small>+'+t.xp+' XP · +'+t.coins+' żetonów</small></button>').join('')+'</div>');return;}
@@ -310,7 +330,10 @@ document.addEventListener('submit',e=>{
  if(!['lead-form','activity-form','task-form','reward-form','settings-form'].includes(e.target.id))return;e.preventDefault();
  act(()=>{
  const form=e.target,data=new FormData(form),values=Object.fromEntries(data);
- if(form.id==='lead-form'){const old=state.leads.find(l=>l.id===form.dataset.id),l=C.makeLead(values);if(old)Object.assign(old,l,{id:old.id,createdAt:old.createdAt,archived:old.archived});else {if(form.dataset.client)l.clientId=form.dataset.client;state.leads.push(l);}save();close();render();toast('Kontakt zapisany. Następny krok jest jasny.');}
+ if(form.id==='lead-form'){const old=state.leads.find(l=>l.id===form.dataset.id),l=C.makeLead(values);if(old){
+  for(const key of ['role','price','size','rooms'])delete old[key];
+  Object.assign(old,l,{id:old.id,createdAt:old.createdAt,archived:old.archived});
+ }else {if(form.dataset.client)l.clientId=form.dataset.client;state.leads.push(l);}save();close();render();toast('Kontakt zapisany. Następny krok jest jasny.');}
  if(form.id==='activity-form'){
   if(form.dataset.type==='call'&&values.outcome==='callback'){
    values.outcome='reached';

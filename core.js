@@ -18,11 +18,36 @@ export function dayKey(time=Date.now()){const d=new Date(time);return d.getFullY
 export function isDay(s){return typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&dayKey(new Date(s+'T12:00:00'))===s;}
 export function offsetDay(day,n){const d=new Date(day+'T12:00:00');d.setDate(d.getDate()+n);return dayKey(d);}
 export function fresh(now=Date.now()){return {version:2,createdAt:now,settings:{name:'Adrian',agency:'ATRIA',calls:5,conversations:3,meetings:1,monthlyGoal:10000,bold:true,sound:false,motion:true},leads:[],activities:[],tasks:[],claims:[],purchases:[],rewards:[{id:'dinner',title:'Wieczór w restauracji',cost:180,archived:false},{id:'nightbrand',title:'Sesja NightBrand',cost:100,archived:false},{id:'treat',title:'Coś dla siebie',cost:300,archived:false}],buildings:{office:0,studio:0,network:0},upgrades:[],legacy:{xp:0,coins:0},focus:null,lastVisit:dayKey(now)};}
+export const CASE_ROLES={buyer:'Kupujący',seller:'Sprzedający',tenant:'Najemca',landlord:'Wynajmujący'};
+export function caseDetails(input){
+ const details={};
+ if(Object.hasOwn(CASE_ROLES,input.role))details.role=input.role;
+ for(const [key,max] of [['price',1000000000],['rooms',100],['size',100000]]){
+  if(input[key]===''||input[key]==null)continue;
+  const value=Number(input[key]);
+  if(!Number.isSafeInteger(value)||value<1||value>max)throw Error('Sprawdź kwotę, metraż i liczbę pokoi.');
+  details[key]=value;
+ }
+ return details;
+}
+export function matchingCases(lead,leads){
+ if(lead.archived||["won","lost"].includes(lead.stage))return [];
+ const normalize=value=>value.trim().toLocaleLowerCase('pl');
+ return leads.filter(other=>{
+  if(other.id===lead.id||other.archived||['won','lost'].includes(other.stage))return false;
+  const [buyer,offer]=['buyer','tenant'].includes(lead.role)?[lead,other]:[other,lead];
+  const offerRole={buyer:'seller',tenant:'landlord'}[buyer.role];
+  return !!offerRole&&offer.role===offerRole&&buyer.price>0&&offer.price>0&&offer.price<=buyer.price&&
+   !!buyer.area.trim()&&normalize(buyer.area)===normalize(offer.area)&&
+   normalize(buyer.property)===normalize(offer.property)&&
+   (!buyer.rooms||offer.rooms>=buyer.rooms)&&(!buyer.size||offer.size>=buyer.size);
+ });
+}
 export function makeLead(input,now=Date.now()){
  const name=String(input.name||'').trim().slice(0,100);if(!name)throw Error('Nadaj kontaktowi nazwę lub pseudonim.');
  const stage=STAGES.some(s=>s[0]===input.stage)?input.stage:'new';
  if(input.nextDate&&!isDay(input.nextDate))throw Error('Wybierz poprawną datę kontaktu.');
- return {id:uid(),name,phone:String(input.phone||'').trim().slice(0,40),area:String(input.area||'Łańcut').trim().slice(0,100),property:String(input.property||'Mieszkanie').trim().slice(0,100),stage,nextDate:input.nextDate||dayKey(now),nextAction:String(input.nextAction||'Wykonaj pierwszy telefon').trim().slice(0,200),notes:String(input.notes||'').trim().slice(0,2000),createdAt:now,archived:false};
+ return {...caseDetails(input),id:uid(),name,phone:String(input.phone||'').trim().slice(0,40),area:String(input.area||'Łańcut').trim().slice(0,100),property:String(input.property||'Mieszkanie').trim().slice(0,100),stage,nextDate:input.nextDate||dayKey(now),nextAction:String(input.nextAction||'Wykonaj pierwszy telefon').trim().slice(0,200),notes:String(input.notes||'').trim().slice(0,2000),createdAt:now,archived:false};
 }
 export function logActivity(s,input,now=Date.now()){
  if(!Object.hasOwn(TYPES,input.type))throw Error('Wybierz rodzaj działania.');
@@ -142,6 +167,10 @@ export function validate(s){
  for(const b of BUILDINGS)if(!int(s.buildings[b.id],3))fail();
  const ids=new Set(),leadIds=new Set(),checks=(x)=>{if(!str(x.id,100)||!x.id||ids.has(x.id))fail();ids.add(x.id);};
  for(const l of s.leads){checks(l);leadIds.add(l.id);if(!str(l.name,100)||!l.name.trim()||!str(l.phone,40)||!str(l.area,100)||!str(l.property,100)||!str(l.nextAction,200)||!str(l.notes,2000)||!STAGES.some(x=>x[0]===l.stage)||!isDay(l.nextDate)||typeof l.archived!=='boolean'||!Number.isFinite(l.createdAt))fail();}
+ for(const lead of s.leads){
+  const details=caseDetails(lead);
+  for(const key of ['role','price','rooms','size'])if(lead[key]!==details[key])fail();
+ }
  for(const lead of s.leads)if(lead.clientId!==undefined&&(!leadIds.has(lead.clientId)||lead.clientId===lead.id))fail();
  const milestones=new Set();
  for(const a of s.activities){checks(a);if(!Object.hasOwn(TYPES,a.type)||!(a.leadId===null||leadIds.has(a.leadId))||!str(a.leadName,100)||!str(a.note,300)||!isDay(a.day)||!Number.isFinite(a.time)||!['reached','declined','noanswer','done'].includes(a.outcome)||!int(a.commissionGrosz,1000000000)||typeof a.voided!=='boolean')fail();if(a.type!=='sale'&&a.commissionGrosz!==0)fail();if(['sale','mandate','listing'].includes(a.type)&&a.leadId&&!a.voided){const key=a.leadId+':'+a.type;if(milestones.has(key))fail();milestones.add(key);}}
