@@ -1,10 +1,10 @@
-const VERSION='2.4.3';
+const VERSION='2.4.4';
 let registration,changed=false,checking=false,notice;
 function offerUpdate(){
  changed=true;
  if(notice?.isConnected)return;
  notice=document.createElement('section');notice.setAttribute('role','status');
- notice.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(100px + env(safe-area-inset-bottom));z-index:200;padding:16px;border:1px solid #adbec7;border-radius:16px;background:#25332f;color:#fff;box-shadow:0 12px 40px #0008;display:flex;gap:12px;align-items:center;flex-wrap:wrap';
+ notice.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(100px + env(safe-area-inset-bottom));z-index:200;padding:16px;border:1px solid #adbec7;border-radius:16px;background:#203d55;color:#fff;box-shadow:0 12px 40px #0008;display:flex;gap:12px;align-items:center;flex-wrap:wrap';
  const label=document.createElement('span');label.textContent='Nowa wersja jest gotowa. Zapisz otwarte formularze przed odświeżeniem.';label.style.flex='1 1 180px';
  const apply=document.createElement('button');apply.className='btn primary gold';apply.textContent='Wczytaj nową wersję';apply.addEventListener('click',()=>location.reload());
  const later=document.createElement('button');later.className='btn';later.textContent='Później';later.addEventListener('click',()=>notice.remove());

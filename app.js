@@ -202,11 +202,12 @@ function leadForm(id,source){
 function logForm(type=null,leadId=null){
  if(!type){modal('Jaki ruch wykonałeś?','<p class="subtitle">Punkty za rzeczywistą pracę. Prowizja dopiero po wpisaniu transakcji.</p><div class="choice-grid">'+Object.entries(C.TYPES).map(([id,t])=>'<button class="choice" data-action="log-type" data-id="'+id+'">'+icon(t.icon)+'<strong>'+t.label+'</strong><small>+'+t.xp+' XP · +'+t.coins+' żetonów</small></button>').join('')+'</div>');return;}
  const t=C.TYPES[type],lead=state.leads.find(l=>l.id===leadId);
- modal(t.label+' — dobry ruch.',
+ modal(type==='call'?'Zapisz wynik telefonu':t.label+' — dobry ruch.',
  '<form id="activity-form" data-type="'+type+'" data-token="'+C.uid()+'"><label class="field">Kontakt'+(type==='sale'?' (wymagany)':'')+'<select name="leadId" '+(type==='sale'?'required':'')+'><option value="">'+(type==='sale'?'Wybierz kontakt':'Bez przypisania — opiszę działanie')+'</option>'+state.leads.filter(l=>!l.archived).map(l=>'<option value="'+esc(l.id)+'" '+(leadId===l.id?'selected':'')+'>'+esc(l.name)+'</option>').join('')+'</select></label>'+
- (type==='call'?'<label class="field">Wynik telefonu<select name="outcome"><option value="reached">Rozmowa</option><option value="noanswer">Brak odpowiedzi</option><option value="declined">Odmowa</option></select></label>':'')+
+ (type==='call'?'<label class="field">Wynik telefonu<select name="outcome"><option value="reached">Odebrał</option><option value="noanswer">Nie odebrał</option><option value="callback">Oddzwoni</option><option value="declined">Odmowa</option></select></label>':'')+
  (type==='sale'?'<label class="field">Rzeczywista prowizja z tej transakcji (zł)<input name="commission" type="number" min="0" max="10000000" step=".01" required placeholder="Np. 8500"><small>Wpisz uzgodnioną kwotę. To nie jest prognoza ani żeton gry.</small></label>':'')+
  '<label class="field">Krótki opis<input name="note" maxlength="300" placeholder="'+(lead?'Np. właściciel potwierdził termin':'Np. telefon w sprawie mieszkania w centrum')+'"><small>Wymagany, jeśli nie przypisujesz kontaktu.</small></label><label class="field">Data wykonania<input name="day" type="date" required max="'+today()+'" value="'+today()+'"></label>'+
+ (type==='call'?'<div class="row wrap followup-shortcuts" aria-label="Szybki termin kontaktu"><button type="button" class="btn ghost" data-action="followup-date" data-id="1">Jutro</button><button type="button" class="btn ghost" data-action="followup-date" data-id="3">Za 3 dni</button><button type="button" class="btn ghost" data-action="followup-date">Wybierz datę</button></div>':'')+
  (type!=='sale'?'<div class="form-grid"><label class="field">Następny kontakt (opcjonalnie)<input name="nextDate" type="date" value="'+esc(lead?.nextDate||'')+'"></label><label class="field">Następny krok<input name="nextAction" maxlength="200" value="'+esc(lead?.nextAction||'')+'" placeholder="Np. wysłać propozycję spotkania"></label></div>':'')+
  '<div class="notice" style="margin-top:10px">+'+t.xp+' XP · +'+t.coins+' żetonów · +'+t.influence+' wpływu. Wynik telefonu nie odbiera Ci punktów za próbę.</div><div class="form-actions"><button class="btn" type="button" data-action="close">Anuluj</button><button class="btn gold" type="submit">Zapisz wykonane działanie</button></div></form>');
 }
@@ -257,6 +258,20 @@ document.addEventListener('click',e=>{
  case 'log-call':logForm('call');break;
  case 'log-sale':logForm('sale');break;
  case 'log-type':logForm(id);break;
+ case 'followup-date':{
+  const field=button.form?.elements.nextDate;
+  if(!field)break;
+  if(id){
+   const date=new Date();
+   date.setHours(12,0,0,0);
+   date.setDate(date.getDate()+Number(id));
+   field.value=C.dayKey(date);
+  }else{
+   field.focus();
+   try{field.showPicker?.();}catch{}
+  }
+  break;
+ }
  case 'log-lead':logForm('call',id);break;
  case 'claim':{const reward=C.claim(state,id);save();render();celebrate(reward);break;}
  case 'task-add':taskForm();break;
@@ -296,7 +311,12 @@ document.addEventListener('submit',e=>{
  act(()=>{
  const form=e.target,data=new FormData(form),values=Object.fromEntries(data);
  if(form.id==='lead-form'){const old=state.leads.find(l=>l.id===form.dataset.id),l=C.makeLead(values);if(old)Object.assign(old,l,{id:old.id,createdAt:old.createdAt,archived:old.archived});else {if(form.dataset.client)l.clientId=form.dataset.client;state.leads.push(l);}save();close();render();toast('Kontakt zapisany. Następny krok jest jasny.');}
- if(form.id==='activity-form'){const a=C.logActivity(state,{...values,id:form.dataset.token,type:form.dataset.type});if(a){save();close();render();celebrate(C.TYPES[a.type]);}}
+ if(form.id==='activity-form'){
+  if(form.dataset.type==='call'&&values.outcome==='callback'){
+   values.outcome='reached';
+   values.note=('Klient oddzwoni. '+values.note.trim()).trim();
+  }
+  const a=C.logActivity(state,{...values,id:form.dataset.token,type:form.dataset.type});if(a){save();close();render();celebrate(C.TYPES[a.type]);}}
  if(form.id==='task-form'){const old=state.tasks.find(t=>t.id===form.dataset.id),locked=!!old?.records.length,t=C.makeTask({...values,steps:locked?old.steps:String(values.steps||'').split('\n'),tier:locked?old.tier:values.tier,date:locked?old.date:values.date,repeat:locked?old.repeat:values.repeat});if(old)Object.assign(old,t,{id:old.id,records:old.records,archived:old.archived});else state.tasks.push(t);save();close();render();toast('Misja gotowa. Teraz pierwszy krok.');}
  if(form.id==='reward-form'){const title=String(values.title||'').trim().slice(0,160),cost=Number(values.cost);if(!title||!Number.isSafeInteger(cost)||cost<1||cost>100000)throw Error('Podaj nazwę i koszt od 1 do 100 000 żetonów.');const r=state.rewards.find(r=>r.id===form.dataset.id);if(r)Object.assign(r,{title,cost});else state.rewards.push({id:C.uid(),title,cost,archived:false});save();close();render();toast('Nagroda zapisana.');}
  if(form.id==='settings-form'){const next={name:String(values.name||'').trim().slice(0,40),agency:String(values.agency||'').trim().slice(0,50),calls:Number(values.calls),conversations:Number(values.conversations),meetings:Number(values.meetings),monthlyGoal:Number(values.monthlyGoal),bold:data.has('bold'),sound:data.has('sound'),motion:data.has('motion')};C.validate({...state,settings:next});state.settings=next;save();close();render();toast('Zasady zapisane. Gramy dalej.');}
