@@ -70,12 +70,42 @@ function drawMove(){
   key:'task:'+task.id,title:task.title,detail:'Otwarta misja',
   actions:'<button class="btn gold" data-action="draw-missions">Otwórz misje</button>'
  }));
- const fallback=[
-  {key:'focus',title:'Zacznij 5 minut akwizycji',detail:'Otwórz oferty i wybierz jeden kontakt do wykonania.',actions:state.focus?'<button class="btn" data-action="close">Wróć do timera</button>':'<button class="btn gold" data-action="focus-start" data-id="5">Uruchom timer</button>'},
-  {key:'new',title:'Dodaj jeden kontakt do CRM',detail:'Wpisz osobę, do której chcesz wrócić, i zaplanuj następny krok.',actions:'<button class="btn gold" data-action="lead-add">Dodaj kontakt</button>'}
+ const ideas=[
+  ['Pozyskiwanie','Sprawdź 3 nowe ogłoszenia prywatne','Wybierz jedną ofertę, przy której możesz realnie pomóc właścicielowi.','portals'],
+  ['Pozyskiwanie','Wróć do dawnego źródła poleceń','Wybierz jedną osobę i przygotuj krótką, osobistą wiadomość.','pipeline'],
+  ['Pozyskiwanie','Przećwicz otwarcie rozmowy','Powiedz na głos dwa zdania, którymi przedstawisz się właścicielowi.'],
+  ['Pozyskiwanie','Przygotuj odpowiedź na typową obiekcję','Zapisz krótką odpowiedź na pytanie o prowizję lub wyłączność.'],
+  ['Pozyskiwanie','Zrób 5 minut akwizycji','Wybierz jedną ulicę albo miejscowość i sprawdź nowe ogłoszenia.','focus'],
+  ['CRM','Uzupełnij jeden kontakt','Dopisz brakujący numer, preferowaną formę kontaktu albo istotną notatkę.','pipeline'],
+  ['CRM','Zaplanuj kolejny krok w jednej sprawie','Ustal konkretne działanie i datę powrotu do klienta.','pipeline'],
+  ['CRM','Przejrzyj sprawy po spotkaniach','Wybierz jedno spotkanie i przygotuj krótkie podsumowanie ustaleń.','pipeline'],
+  ['CRM','Zapisz kryteria kupującego','Dopisz budżet, lokalizację i trzy warunki, na których klientowi zależy.','pipeline'],
+  ['CRM','Uporządkuj jedną odłożoną sprawę','Sprawdź, czy warto do niej wrócić, i zaktualizuj etap.','pipeline'],
+  ['Oferty','Porównaj 3 podobne nieruchomości','Zapisz cenę za metr i najważniejsze różnice.','portals'],
+  ['Oferty','Sprawdź, co zmieniło się na rynku','Znajdź jedną zmianę ceny lub nową ofertę w rejonie, w którym działasz.','portals'],
+  ['Oferty','Popraw pierwsze zdanie ogłoszenia','Umieść najważniejszy atut nieruchomości w pierwszym zdaniu.'],
+  ['Oferty','Przejrzyj zdjęcia jednej oferty','Wybierz lepsze zdjęcie główne i wskaż jedno ujęcie do uzupełnienia.'],
+  ['Oferty','Sprawdź kompletność ogłoszenia','Zweryfikuj metraż, piętro, opłaty i dostępność.'],
+  ['Marketing','Zapisz pomysł na krótki film','Wybierz jeden atut nieruchomości i rozpisz trzy ujęcia.'],
+  ['Marketing','Przygotuj szkic posta ATRIA','Zacznij od pytania, które często zadają klienci.'],
+  ['Marketing','Przygotuj opis zdjęcia oferty','Wyjaśnij jednym zdaniem, co to miejsce daje kupującemu.'],
+  ['Marketing','Sprawdź profil ATRIA oczami klienta','Zobacz, czy łatwo znaleźć telefon, ofertę i sposób kontaktu.','portals'],
+  ['Marketing','Zapisz pomysł na poradę dla sprzedających','Wybierz jedną rzecz, którą warto przygotować przed pierwszą prezentacją.'],
+  ['Teren','Sprawdź trasę na najbliższą prezentację','Zaplanuj dojazd, miejsce parkowania i punkt spotkania.','field'],
+  ['Teren','Przygotuj trzy pytania na oględziny','Dopytaj o stan, koszty utrzymania i termin wydania.','field'],
+  ['Teren','Zrób listę ujęć przed wizytą','Uwzględnij wejście, wnętrze, widok i otoczenie.','field'],
+  ['Teren','Wybierz jedną okolicę do rozpoznania','Sprawdź dojazd, usługi i charakter zabudowy.','field'],
+  ['Organizacja','Zaplanuj jeden blok telefonów','Wybierz porę i przygotuj krótką listę kontaktów.','focus'],
+  ['Organizacja','Uporządkuj materiały jednej nieruchomości','Zbierz zdjęcia, opis i ustalenia w jednym miejscu.'],
+  ['Organizacja','Rozbij jedną dużą misję','Zapisz pierwszy krok, który możesz zrobić dzisiaj.','missions'],
+  ['Organizacja','Zapisz jedno działanie z ostatniej rozmowy','Dodaj następny krok do CRM, póki pamiętasz szczegóły.','pipeline']
  ];
- const pool=[...contacts,...missions];
- const moves=pool.length?pool:fallback;
+ const labels={portals:'Otwórz portale',pipeline:'Otwórz CRM',field:'Otwórz Teren',missions:'Otwórz misje',focus:'Ustaw timer'};
+ const suggestions=ideas.map(([category,title,detail,destination],index)=>({
+  key:'idea:'+index,title,detail:category+' · '+detail,
+  actions:destination?'<button class="btn gold" data-action="draw-open" data-id="'+destination+'">'+labels[destination]+'</button>':''
+ }));
+ const moves=[...contacts,...missions,...suggestions];
  let available=moves.filter(move=>!drawnMoves.has(move.key));
  if(!available.length){
   const last=[...drawnMoves].at(-1);
@@ -198,6 +228,7 @@ document.addEventListener('click',e=>{
  switch(action){
  case 'close':close();break;
  case 'draw-move':drawMove();break;
+ case 'draw-open':if(id==='focus'){close();document.querySelector('[data-action=focus]')?.click();break;}close();tab=id;render();$('#main').focus();window.scrollTo(0,0);break;
  case 'draw-missions':close();tab='missions';taskFilter='active';render();$('#main').focus();window.scrollTo(0,0);break;
  case 'settings':settings();break;
  case 'lead-add':leadForm();break;
