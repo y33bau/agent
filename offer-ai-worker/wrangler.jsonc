@@ -1,0 +1,12 @@
+{
+ "name": "atria-offer-ai",
+ "main": "worker.js",
+ "compatibility_date": "2026-11-19",
+ "preview_urls": false,
+ "vars": {"ALLOWED_ORIGIN": "https://y33bau.github.io"},
+ "ratelimits": [{
+  "name": "OFFER_RATE_LIMIT",
+  "namespace_id": "1012",
+  "simple": {"limit": 12, "period": 60}
+ }]
+}

@@ -58,6 +58,20 @@ export function clientSections(state, lead, timeline, view, overview){
  return tabs+section('Historia kontaktu',btn('crm-note-add',lead.id,'Dodaj wpis'),
   history.map(entry=>entry.html).join('')||blank('Brak zapisanych działań.'));
 }
+function aiPanel(){
+ return '<details class="crm-ai" data-ai-panel><summary>Stwórz ofertę z AI</summary>'+
+  '<label class="field">Dostawca<select data-ai-provider><option value="openai">OpenAI</option><option value="anthropic">Claude</option><option value="gemini">Gemini</option></select></label>'+
+  '<label class="field">Cechy do ogłoszenia<textarea data-ai-features maxlength="1800" rows="3" placeholder="Np. 3 pokoje, balkon od południa, osobna kuchnia"></textarea></label>'+
+  '<p class="subtitle">Do dostawcy trafią typ, miejscowość lub rejon, cena, metraż, rodzaj transakcji i wpisane cechy. Wpisuj tu tylko informacje przeznaczone do ogłoszenia.</p>'+
+  '<details><summary>Połączenie z generatorem</summary><label class="field">Adres Cloudflare Workera<input data-ai-url type="url" placeholder="https://atria-offer-ai.twoje-konto.workers.dev" autocomplete="off"></label>'+
+  '<label class="field">Kod dostępu do generatora<input data-ai-token type="password" maxlength="128" autocomplete="off"></label>'+
+  '<div class="row wrap"><button type="button" class="btn ghost" data-ai-action="check">Połącz</button><button type="button" class="btn text" data-ai-action="forget">Usuń połączenie</button></div></details>'+
+  '<button type="button" class="btn gold" data-ai-action="generate">Generuj szkic</button>'+
+  '<p class="subtitle" data-ai-status role="status" aria-live="polite"></p>'+
+  '<section class="crm-entry" data-ai-result hidden><strong data-ai-draft-title></strong><label class="field">Opis oferty<textarea data-ai-draft-description rows="7" readonly></textarea></label>'+
+  '<label class="field">Skrót do skopiowania<textarea data-ai-draft-short rows="3" readonly></textarea></label>'+
+  '<p class="subtitle" data-ai-draft-missing></p><button type="button" class="btn gold" data-ai-action="apply">Wstaw tytuł i opis</button></section></details>';
+}
 export function crmForm(kind, lead, record){
  const data = record ?? {};
  let body = '';
@@ -68,7 +82,7 @@ export function crmForm(kind, lead, record){
   input('property','Typ nieruchomości',data.property ?? lead.property,100,'text',true)+input('location','Miejscowość lub rejon',data.location ?? lead.area,150,'text',true)+
   numberInput('price','Cena (zł)',record ? data.price : (['seller','landlord'].includes(lead.role)?lead.price:null),1e9)+
   numberInput('area','Powierzchnia (m²)',record ? data.area : (['seller','landlord'].includes(lead.role)?lead.size:null),1e6)+'</div>'+
-  textarea('description','Opis dla klienta',data.description,8000)+textarea('internal','Notatka wewnętrzna',data.internal,3000);
+  aiPanel()+textarea('description','Opis dla klienta',data.description,8000)+textarea('internal','Notatka wewnętrzna',data.internal,3000);
  if(kind==='note') body=select('type','Rodzaj wpisu',data.type,NOTE_TYPES)+textarea('body','Treść wpisu',data.body,4000,true);
  if(kind==='document') body=input('title','Nazwa dokumentu',data.title,160,'text',true)+'<div class="form-grid">'+
   select('type','Rodzaj',data.type,DOCUMENT_TYPES)+select('status','Status',data.status,DOCUMENT_STATUS)+'</div>'+

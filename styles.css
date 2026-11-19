@@ -141,3 +141,9 @@ dialog{background:#172e42;border-color:#dfc58a59}
 @media (min-width: 520px) {
  .client-tabs { grid-template-columns:repeat(4,minmax(0,1fr)); }
 }
+.crm-ai { margin:16px 0; padding:14px; border:1px solid var(--line); border-radius:14px; }
+.crm-ai summary { cursor:pointer; font-weight:700; }
+.crm-ai details { margin:12px 0; }
+.crm-ai > button { margin-top:12px; }
+.crm-ai [data-ai-status]:empty { display:none; }
+.crm-ai [data-ai-result][hidden] { display:none; }
