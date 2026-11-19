@@ -150,9 +150,12 @@ export default {
    const result=await fetch(upstream.url,{method:'POST',headers:upstream.headers,
     body:JSON.stringify(upstream.body),signal:controller.signal,redirect:'manual'});
    if(!result.ok){
-    await result.body?.cancel();
-    const error=[401,403,404].includes(result.status)?'provider_config':result.status===429?'provider_limit':result.status===402?'provider_billing':'provider_error';
-    return response(origin,502,{error});
+    const status=result.status;
+    // Log only the HTTP status: upstream error text can contain credentials.
+    console.warn('AI provider rejected request',{provider,status});
+    await result.body?.cancel().catch(()=>{});
+    const error=[401,403,404].includes(status)?'provider_config':status===429?'provider_limit':status===402?'provider_billing':'provider_error';
+    return response(origin,502,{error,providerStatus:status});
    }
    const data=await result.json();
    if(provider==='openai' && data.status && data.status!=='completed'){
@@ -166,4 +169,3 @@ export default {
   }finally{clearTimeout(timer);}
  }
 };
-

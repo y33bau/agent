@@ -55,7 +55,18 @@ async function request(config,path,body){
   });
  }catch(error){throw Error(error.name==='TimeoutError'?'Przekroczono czas oczekiwania.':'Nie udało się połączyć z Workerem. Sprawdź adres i internet.');}
  const data=await response.json().catch(()=>null);
- if(!response.ok || !data)throw Error(errors[data?.error] || 'Worker nie odpowiedział prawidłowo.');
+ if(!response.ok || !data){
+  if(data?.error==='provider_config'){
+   const name=labels[body?.provider] || 'Dostawca AI';
+   const detail={
+    401:'odrzucił klucz API. W Cloudflare ustaw aktywny klucz API tego dostawcy.',
+    403:'nie zezwala na to żądanie. Sprawdź uprawnienia klucza i projektu API.',
+    404:'nie udostępnia wybranego modelu. Sprawdź, czy projekt API ma do niego dostęp.'
+   }[data.providerStatus];
+   if(detail) throw Error(name+' '+detail+' ('+data.providerStatus+').');
+  }
+  throw Error(errors[data?.error] || 'Worker nie odpowiedział prawidłowo.');
+ }
  return data;
 }
 function draftPreview(form,draft,provider){
