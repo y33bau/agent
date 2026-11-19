@@ -123,3 +123,21 @@ dialog{background:#172e42;border-color:#dfc58a59}
 .portal-group .life-link small{color:var(--muted)!important;font-size:12px}
 .portal-arrow{color:var(--gold)}
 @media(max-width:650px){.portal-group .life-links{grid-template-columns:minmax(0,1fr)}}
+.crm-tabs { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 16px; }
+.crm-tabs .filter { flex:1; min-height:44px; }
+.crm-tabs .filter.active { border-color:var(--gold); }
+.crm-stack, .crm-block { display:grid; gap:10px; }
+.crm-block { margin-top:18px; }
+.crm-block .section-head, .crm-entry .section-head { margin:0; flex-wrap:wrap; gap:8px; }
+.crm-entry { border:1px solid var(--line); border-radius:14px; padding:14px; overflow-wrap:anywhere; }
+.crm-entry strong, .crm-entry small { display:block; }
+.crm-entry small { color:var(--muted); }
+.crm-copy { white-space:pre-wrap; overflow-wrap:anywhere; margin:6px 0 10px; }
+.crm-entry .btn { margin-top:5px; }
+.crm-entry a { text-decoration:none; }
+.crm-toolbar select { width:100%; }
+.client-tabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.crm-case-actions { margin:16px 0; }
+@media (min-width: 520px) {
+ .client-tabs { grid-template-columns:repeat(4,minmax(0,1fr)); }
+}

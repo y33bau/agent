@@ -1,4 +1,7 @@
 import * as C from './core.js';
+import {crmData} from './crm-core.js';
+import {clientSections, crmTabs, offersView} from './crm-ui.js';
+import {createCrmActions} from './crm-actions.js';
 const KEY='agent_empire_v2',$=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const paths={
  grid:'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
@@ -141,7 +144,9 @@ function leadCard(lead){
   '<div class="crm-card-actions"><button class="btn gold" data-action="client-card" data-id="'+id+'">Otwórz kartę</button>'+
   '<button class="btn ghost" data-action="log-lead" data-id="'+id+'">Zapisz telefon</button></div></article>';
 }
+let crmView='leads',offerFilter='all',offerSearch='';
 function pipelineView(){
+ if(crmView==='offers')return heading('CRM','','crm-offer-pick','Nowa oferta')+crmTabs(crmView)+offersView(state,offerFilter,offerSearch);
  const counts=C.STAGES.filter(x=>x[0]!=='lost').map(([id,title])=>'<button class="stage-count filter '+(leadFilter==='stage:'+id?'active':'')+'" data-lead-filter="stage:'+id+'"><strong>'+state.leads.filter(l=>!l.archived&&l.stage===id).length+'</strong>'+title+'</button>').join('');
  let leads=state.leads.filter(l=>leadFilter==='archive'?l.archived:!l.archived);
  if(leadFilter==='active')leads=leads.filter(l=>!['won','lost'].includes(l.stage));
@@ -152,16 +157,17 @@ function pipelineView(){
  if(leadFilter.startsWith('role:'))leads=leads.filter(l=>l.role===leadFilter.slice(5));
  if(leadFilter.startsWith('stage:'))leads=leads.filter(l=>l.stage===leadFilter.slice(6));
  if(leadFilter==='won')leads=leads.filter(l=>l.stage==='won');
- leads=leads.filter(l=>(l.name+' '+l.area+' '+l.property).toLocaleLowerCase('pl').includes(search.toLocaleLowerCase('pl')));
+ const emails=new Map(crmData(state).profiles.map(profile=>[profile.clientId,profile.email]));
+ leads=leads.filter(l=>[l.name,l.phone,l.area,l.property,emails.get(l.clientId||l.id)].join(' ').toLocaleLowerCase('pl').includes(search.trim().toLocaleLowerCase('pl')));
  const filters=[['active','W toku'],['late','Zaległe'],['today','Dzisiaj'],['later','Nadchodzące']];
  const extraFilters=[['all','Wszystkie'],['won','Zamknięte'],['archive','Archiwum']];
  const filterButton=([id,label])=>'<button class="filter '+(leadFilter===id?'active':'')+'" aria-pressed="'+(leadFilter===id)+'" data-lead-filter="'+id+'">'+label+'</button>';
- return heading('CRM','', 'lead-add','Dodaj kontakt')+
-  '<div class="crm-toolbar"><input class="search" aria-label="Szukaj kontaktu" placeholder="Szukaj kontaktu…" value="'+esc(search)+'">'+
+ return heading('CRM','', 'lead-add','Dodaj lead')+crmTabs(crmView)+
+  '<div class="crm-toolbar"><input class="search" aria-label="Szukaj kontaktu" placeholder="Nazwisko, telefon, e-mail lub rejon" value="'+esc(search)+'">'+
   '<div class="crm-quick">'+filters.map(filterButton).join('')+'</div>'+
   '<details '+(leadFilter.startsWith('stage:')||leadFilter.startsWith('role:')||extraFilters.some(([id])=>id===leadFilter)?'open':'')+'><summary>Więcej filtrów i etapy</summary>'+
   '<div class="filters">'+extraFilters.concat(Object.entries(C.CASE_ROLES).map(([id,label])=>['role:'+id,label])).map(filterButton).join('')+'</div><div class="pipeline-summary">'+counts+'</div></details></div>'+
-  '<div class="lead-grid" id="lead-grid">'+(leads.length?leads.map(leadCard).join(''):empty('Brak kontaktów w tym widoku.','Dodaj kontakt lub zmień filtr.','lead-add','Dodaj kontakt','users'))+'</div>';
+  '<div class="lead-grid" id="lead-grid">'+(leads.length?leads.map(leadCard).join(''):empty('Brak kontaktów w tym widoku.','Dodaj lead lub zmień filtr.','lead-add','Dodaj lead','users'))+'</div>';
 
 }
 function taskCard(t){
@@ -198,7 +204,7 @@ function caseDetailsForm(lead){
   '<div class="form-grid">'+fields.map(([name,label,max])=>'<label class="field">'+label+'<input type="number" inputmode="numeric" min="1" max="'+max+'" name="'+name+'" value="'+esc(lead?.[name]??'')+'"></label>').join('')+'</div>'+
   '<p class="subtitle">Dla najmu podaj miesięczną kwotę. Do dopasowania używamy nazwy rejonu i rodzaju nieruchomości.</p></details>';
 }
-function clientCard(id){
+function clientCard(id,view='overview'){
  const lead=state.leads.find(item=>item.id===id);
  if(!lead)return;
  const clientId=lead.clientId||lead.id;
@@ -209,8 +215,10 @@ function clientCard(id){
   '<section class="panel"><button class="btn text" data-action="client-card" data-id="'+esc(item.id)+'">'+esc(item.name+' · '+item.property+' · '+item.area)+'</button>'+caseSummary(item)+'</section>'
  ).join(''):'<p>Uzupełnij rejon, rodzaj i kwotę w obu sprawach. Dopasowania uwzględniają też podane minimum metrażu i pokoi.</p>'):'';
 
- const history=state.activities.filter(item=>ids.has(item.leadId)&&!item.voided).sort((a,b)=>b.time-a.time);
- modal(lead.name,'<p>'+esc(lead.phone)+'</p><div class="row wrap"><button class="btn" data-action="lead-edit" data-id="'+esc(id)+'">Edytuj sprawę</button><button class="btn" data-action="case-add" data-id="'+esc(id)+'">Dodaj sprawę</button><button class="btn" data-action="log-lead" data-id="'+esc(id)+'">Zapisz kontakt</button></div><h3>Sprawy i nieruchomości</h3>'+cases.map(item=>'<section class="panel"><button class="btn text" data-action="client-card" data-id="'+esc(item.id)+'">'+esc(item.property+' · '+item.area)+'</button>'+caseSummary(item)+'<p>'+esc(C.STAGES.find(([stage])=>stage===item.stage)[1])+' · '+esc(item.nextDate)+' · '+esc(item.nextAction)+'</p><p>'+esc(item.notes)+'</p></section>').join('')+matchingPanel+'<h3>Historia kontaktu</h3>'+(history.length?history.map(item=>'<p>'+esc(item.day+' · '+C.TYPES[item.type].label+' · '+({reached:'Rozmowa',noanswer:'Brak odpowiedzi',declined:'Odmowa',done:'Zapisano'}[item.outcome])+(item.note?' · '+item.note:''))+'</p>').join(''):'<p>Brak zapisanych działań.</p>'));
+ const history=state.activities.filter(item=>ids.has(item.leadId)&&!item.voided).map(item=>({time:item.time,html:'<article class="crm-entry"><strong>'+esc(C.TYPES[item.type].label)+'</strong><small>'+esc(item.day)+' · '+esc(({reached:'Rozmowa',noanswer:'Brak odpowiedzi',declined:'Odmowa',done:'Zapisano'})[item.outcome])+'</small>'+(item.note?'<p class="crm-copy">'+esc(item.note)+'</p>':'')+'</article>'}));
+ const overview='<div class="row wrap crm-case-actions"><button class="btn" data-action="lead-edit" data-id="'+esc(id)+'">Edytuj sprawę</button><button class="btn" data-action="case-add" data-id="'+esc(id)+'">Dodaj sprawę</button><button class="btn" data-action="log-lead" data-id="'+esc(id)+'">Zapisz kontakt</button></div><h3>Sprawy i nieruchomości</h3>'+cases.map(item=>'<section class="panel"><button class="btn text" data-action="client-card" data-id="'+esc(item.id)+'">'+esc(item.property+' · '+item.area)+'</button>'+caseSummary(item)+'<p>'+esc(C.STAGES.find(([stage])=>stage===item.stage)[1])+' · '+esc(item.nextDate)+' · '+esc(item.nextAction)+'</p><p>'+esc(item.notes)+'</p></section>').join('')+matchingPanel;
+ const client=state.leads.find(item=>item.id===clientId)||lead;
+ modal(client.name,clientSections(state,lead,history,view,overview));
 }
 const tabs=[['dashboard','Pulpit','grid'],['pipeline','CRM','users'],['field','Teren','phone'],['portals','Portale','building'],['more','Więcej','grid'],['missions','Misje','target'],['empire','Imperium','building'],['rewards','Nagrody','gift'],['progress','Postęp','chart']];
 function render(){
@@ -222,12 +230,12 @@ function render(){
  $('#main').innerHTML=({field:()=>heading('Teren',''),portals:()=>heading('Portale',''),more:moreView,dashboard:dashboardView,pipeline:pipelineView,missions:missionsView,empire:empireView,rewards:rewardsView,progress:progressView}[tab])();
  state.lastVisit=today();save();renderFocus();
 }
-function modal(title,body){lastTrigger=document.activeElement;$('#modal-content').innerHTML='<div class="modal-head"><h2 id="modal-title">'+esc(title)+'</h2><button class="icon-btn" data-action="close" aria-label="Zamknij">×</button></div>'+body;if(!$('#modal').open)$('#modal').showModal();}
+function modal(title,body){lastTrigger=document.activeElement;$('#modal-content').innerHTML='<div class="modal-head"><h2 id="modal-title">'+esc(title)+'</h2><button class="icon-btn" data-action="close" aria-label="Zamknij">×</button></div>'+body;if(!$('#modal').open)$('#modal').showModal();$('#modal').scrollTop=0;}
 function close(){if($('#modal').open)$('#modal').close();if(lastTrigger?.isConnected)lastTrigger.focus();}
 function leadForm(id,source){
  const l=state.leads.find(l=>l.id===id);
- modal(l?'Następny krok w tej relacji.':'Nowy kontakt. Nowa możliwość.',
- '<form id="lead-form" data-id="'+esc(id||'')+'" data-client="'+esc(source?.clientId||source?.id||'')+'"><label class="field">Nazwa lub pseudonim<input name="name" maxlength="100" required value="'+esc((l||source)?.name||'')+'" placeholder="Np. Właściciel · mieszkanie centrum" autofocus></label><div class="form-grid"><label class="field">Telefon (opcjonalnie)<input name="phone" type="tel" maxlength="40" value="'+esc((l||source)?.phone||'')+'"></label><label class="field">Rejon<input name="area" maxlength="100" value="'+esc(l?.area||'Łańcut')+'"></label></div><div class="form-grid"><label class="field">Nieruchomość<input name="property" maxlength="100" value="'+esc(l?.property||'Mieszkanie')+'"></label><label class="field">Etap<select name="stage">'+C.STAGES.map(([v,x])=>'<option value="'+v+'" '+(l?.stage===v?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div><div class="form-grid"><label class="field">Następny kontakt<input name="nextDate" type="date" required value="'+esc(l?.nextDate||today())+'"></label><label class="field">Konkretny następny krok<input name="nextAction" maxlength="200" value="'+esc(l?.nextAction||'Wykonaj pierwszy telefon')+'"></label></div>'+caseDetailsForm(l)+'<label class="field">Notatka<textarea name="notes" maxlength="2000" placeholder="Co warto pamiętać przed rozmową?">'+esc(l?.notes||'')+'</textarea><small>Dane zapisują się na urządzeniu; po włączeniu synchronizacji trafiają też do szyfrowanej chmury. Zapis etapu nie nalicza punktów ani prowizji.</small></label><div class="form-actions">'+(l?'<button class="btn danger" type="button" data-action="lead-archive" data-id="'+esc(l.id)+'">'+(l.archived?'Przywróć':'Archiwizuj')+'</button>':'')+'<button class="btn gold" type="submit">Zapisz kontakt</button></div></form>');
+ modal(l?'Edytuj sprawę':source?'Nowa sprawa klienta':'Nowy lead',
+ '<form id="lead-form" data-id="'+esc(id||'')+'" data-client="'+esc(source?.clientId||source?.id||'')+'"><label class="field">Nazwa lub pseudonim<input name="name" maxlength="100" required value="'+esc((l||source)?.name||'')+'" placeholder="Np. Właściciel · mieszkanie centrum" autofocus></label><div class="form-grid"><label class="field">Telefon (opcjonalnie)<input name="phone" type="tel" maxlength="40" value="'+esc((l||source)?.phone||'')+'"></label><label class="field">Rejon<input name="area" maxlength="100" value="'+esc(l?.area||'Łańcut')+'"></label></div><div class="form-grid"><label class="field">Nieruchomość<input name="property" maxlength="100" value="'+esc(l?.property||'Mieszkanie')+'"></label><label class="field">Etap<select name="stage">'+C.STAGES.map(([v,x])=>'<option value="'+v+'" '+(l?.stage===v?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div><div class="form-grid"><label class="field">Następny kontakt<input name="nextDate" type="date" required value="'+esc(l?.nextDate||today())+'"></label><label class="field">Konkretny następny krok<input name="nextAction" maxlength="200" value="'+esc(l?.nextAction||'Wykonaj pierwszy telefon')+'"></label></div>'+caseDetailsForm(l)+'<label class="field">Notatka<textarea name="notes" maxlength="2000" placeholder="Co warto pamiętać przed rozmową?">'+esc(l?.notes||'')+'</textarea><small>Dane zapisują się na urządzeniu; po włączeniu synchronizacji trafiają też do szyfrowanej chmury. Zapis etapu nie nalicza punktów ani prowizji.</small></label><div class="form-actions">'+(l?'<button class="btn danger" type="button" data-action="lead-archive" data-id="'+esc(l.id)+'">'+(l.archived?'Przywróć':'Archiwizuj')+'</button>':'')+'<button class="btn gold" type="submit">Zapisz sprawę</button></div></form>');
 }
 function logForm(type=null,leadId=null){
  if(!type){modal('Jaki ruch wykonałeś?','<p class="subtitle">Punkty za rzeczywistą pracę. Prowizja dopiero po wpisaniu transakcji.</p><div class="choice-grid">'+Object.entries(C.TYPES).map(([id,t])=>'<button class="choice" data-action="log-type" data-id="'+id+'">'+icon(t.icon)+'<strong>'+t.label+'</strong><small>+'+t.xp+' XP · +'+t.coins+' żetonów</small></button>').join('')+'</div>');return;}
@@ -254,7 +262,7 @@ function rewardForm(id){
 }
 function settings(){
  modal('Twoje zasady gry.',
- '<form id="settings-form"><div class="form-grid"><label class="field">Imię<input name="name" maxlength="40" value="'+esc(state.settings.name)+'"></label><label class="field">Biuro<input name="agency" maxlength="50" value="'+esc(state.settings.agency)+'"></label></div><h3 style="margin-bottom:14px">Dzienny kontrakt</h3><div class="form-grid">'+[['calls','Telefony',100],['conversations','Rozmowy',100],['meetings','Spotkania',20]].map(([k,l,max])=>'<label class="field">'+l+'<input name="'+k+'" type="number" min="1" max="'+max+'" step="1" required value="'+state.settings[k]+'"></label>').join('')+'<label class="field">Cel prowizji / miesiąc (zł)<input name="monthlyGoal" type="number" min="1" max="10000000" step="1" required value="'+state.settings.monthlyGoal+'"></label></div>'+[['bold','Motywacja bez owijania'],['sound','Dźwięk po wykonaniu'],['motion','Delikatne animacje i celebracje']].map(([k,l])=>'<label class="setting-line">'+l+'<input name="'+k+'" type="checkbox" '+(state.settings[k]?'checked':'')+'></label>').join('')+'<div class="form-actions"><button class="btn gold" type="submit">Zapisz ustawienia</button></div></form><hr style="border:0;border-top:1px solid var(--line);margin:24px 0"><button class="btn ghost" data-action="notifications" style="width:100%;margin-bottom:20px">Powiadomienia i przypomnienia</button><h3>Kopia danych</h3><p class="subtitle">Kontakty i postęp są lokalne. Eksportuj kopię, zanim zmienisz urządzenie lub wyczyścisz przeglądarkę. Kopia może zawierać prywatne dane kontaktów.</p><div class="row wrap" style="margin-top:14px"><button class="btn" data-action="export">↓ Pobierz kopię</button><button class="btn" data-action="import">↑ Wczytaj kopię</button>'+(loadFailed?'<button class="btn danger" data-action="raw-export">Pobierz oryginalny zapis</button>':'')+'</div><input id="import-file" type="file" accept=".json,application/json" hidden><p class="subtitle tiny">Instalacja na iPhonie: Safari → Udostępnij → Do ekranu początkowego. Offline działa po pierwszym pełnym otwarciu.</p>'+(installPrompt?'<button class="btn ghost" style="margin-top:12px" data-action="install">Zainstaluj aplikację</button>':'')+'<p class="subtitle tiny">Blok akwizycji nie blokuje innych aplikacji. Prowizje są Twoimi wpisami, bez integracji z bankiem lub CRM.</p>');
+ '<form id="settings-form"><div class="form-grid"><label class="field">Imię<input name="name" maxlength="40" value="'+esc(state.settings.name)+'"></label><label class="field">Biuro<input name="agency" maxlength="50" value="'+esc(state.settings.agency)+'"></label></div><h3 style="margin-bottom:14px">Dzienny kontrakt</h3><div class="form-grid">'+[['calls','Telefony',100],['conversations','Rozmowy',100],['meetings','Spotkania',20]].map(([k,l,max])=>'<label class="field">'+l+'<input name="'+k+'" type="number" min="1" max="'+max+'" step="1" required value="'+state.settings[k]+'"></label>').join('')+'<label class="field">Cel prowizji / miesiąc (zł)<input name="monthlyGoal" type="number" min="1" max="10000000" step="1" required value="'+state.settings.monthlyGoal+'"></label></div>'+[['bold','Motywacja bez owijania'],['sound','Dźwięk po wykonaniu'],['motion','Delikatne animacje i celebracje']].map(([k,l])=>'<label class="setting-line">'+l+'<input name="'+k+'" type="checkbox" '+(state.settings[k]?'checked':'')+'></label>').join('')+'<div class="form-actions"><button class="btn gold" type="submit">Zapisz ustawienia</button></div></form><hr style="border:0;border-top:1px solid var(--line);margin:24px 0"><button class="btn ghost" data-action="notifications" style="width:100%;margin-bottom:20px">Powiadomienia i przypomnienia</button><h3>Kopia danych</h3><p class="subtitle">Kontakty i postęp są lokalne. Eksportuj kopię, zanim zmienisz urządzenie lub wyczyścisz przeglądarkę. Kopia zawiera dane CRM i linki do dokumentów. Załączone pliki pobierz osobno z kart klientów.</p><div class="row wrap" style="margin-top:14px"><button class="btn" data-action="export">↓ Pobierz kopię</button><button class="btn" data-action="import">↑ Wczytaj kopię</button>'+(loadFailed?'<button class="btn danger" data-action="raw-export">Pobierz oryginalny zapis</button>':'')+'</div><input id="import-file" type="file" accept=".json,application/json" hidden><p class="subtitle tiny">Instalacja na iPhonie: Safari → Udostępnij → Do ekranu początkowego. Offline działa po pierwszym pełnym otwarciu.</p>'+(installPrompt?'<button class="btn ghost" style="margin-top:12px" data-action="install">Zainstaluj aplikację</button>':'')+'<p class="subtitle tiny">Blok akwizycji nie blokuje innych aplikacji. Prowizje są Twoimi wpisami, bez integracji z bankiem lub CRM.</p>');
 }
 function renderFocus(){
  const f=state.focus,bar=$('#focus-bar');bar.hidden=!f;if(!f)return;
@@ -266,13 +274,21 @@ function renderFocus(){
 }
 function download(raw,name){const url=URL.createObjectURL(new Blob([raw],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function rawBackup(){return localStorage.getItem(KEY)||JSON.stringify({realestate_agent:localStorage.getItem('realestate_agent'),realestate_quests:localStorage.getItem('realestate_quests')},null,2);}
+const crmActions=createCrmActions({getState:()=>state,uid:C.uid,modal,clientCard,toast,commit(update){
+ const previous=state,next=structuredClone(state);
+ update(next);C.validate(next);state=next;
+ if(!save()){state=previous;throw Error('Nie udało się zapisać danych CRM.');}
+ render();
+}});
 document.addEventListener('click',e=>{
  const button=e.target.closest('button');if(!button)return;
  act(()=>{
- if(button.dataset.tab){tab=button.dataset.tab;if(button.dataset.queue)leadFilter=button.dataset.queue;render();$('#main').focus();window.scrollTo({top:0,behavior:'instant'});return;}
+ if(button.dataset.tab){tab=button.dataset.tab;if(button.dataset.queue){leadFilter=button.dataset.queue;crmView='leads';}render();$('#main').focus();window.scrollTo({top:0,behavior:'instant'});return;}
  if(button.dataset.leadFilter){leadFilter=button.dataset.leadFilter;render();return;}
  if(button.dataset.taskFilter){taskFilter=button.dataset.taskFilter;render();return;}
  const action=button.dataset.action,id=button.dataset.id;
+ if(action==='crm-view'){crmView=id;render();document.querySelector('[data-action=crm-view][aria-pressed=true]')?.focus();return;}
+ if(action?.startsWith('crm-')){crmActions.onAction(action,id).catch(error=>toast(error.message));return;}
  switch(action){
  case 'close':close();break;
  case 'draw-move':drawMove();break;
@@ -280,7 +296,8 @@ document.addEventListener('click',e=>{
  case 'draw-missions':close();tab='missions';taskFilter='active';render();$('#main').focus();window.scrollTo(0,0);break;
  case 'settings':settings();break;
  case 'lead-add':leadForm();break;
- case 'client-card':clientCard(id);break;
+ case 'client-card':clientCard(id,button.dataset.section);break;
+ case 'client-view':clientCard(id,button.dataset.section);$('#modal-content [aria-pressed=true]')?.focus();break;
  case 'case-add':leadForm(null,state.leads.find(item=>item.id===id));break;
  case 'lead-edit':leadForm(id);break;
  case 'lead-archive':{const l=state.leads.find(l=>l.id===id);l.archived=!l.archived;save();close();render();toast(l.archived?'Kontakt w archiwum. Możesz go przywrócić.':'Kontakt przywrócony.');break;}
@@ -331,19 +348,44 @@ document.addEventListener('click',e=>{
  }
  });
 });
-document.addEventListener('input',e=>{if(e.target.matches('.search')){search=e.target.value;const leads=state.leads;const value=e.target.selectionStart;render();const input=$('.search');input?.focus();input?.setSelectionRange(value,value);}});
+document.addEventListener('input',e=>{if(e.target.matches('.search')){if(crmView==='offers')offerSearch=e.target.value;else search=e.target.value;const value=e.target.selectionStart;render();const input=$('.search');input?.focus();input?.setSelectionRange(value,value);}});
 document.addEventListener('change',e=>{
+ if(e.target.name==='offer-status-filter'){offerFilter=e.target.value;render();document.querySelector('[name=offer-status-filter]')?.focus();}
  if(e.target.matches('[data-step]'))act(()=>{const reward=C.completeTask(state,e.target.dataset.task,today(),Date.now(),Number(e.target.dataset.step));if(reward){save();render();celebrate(reward);}});
  if(e.target.id==='import-file'){const file=e.target.files[0];if(!file)return;if(file.size>15000000){toast('Kopia jest za duża. Maksymalnie 15 MB.');return;}file.text().then(raw=>act(()=>{pendingImport=C.validate(JSON.parse(raw));modal('Wczytać tę kopię?','<p class="subtitle">Zastąpi aktualne dane: '+pendingImport.leads.length+' kontaktów i '+pendingImport.activities.length+' działań. Najpierw pobierzemy obecną kopię bezpieczeństwa.</p><div class="form-actions"><button class="btn" data-action="close">Anuluj</button><button class="btn gold" data-action="import-confirm">Wczytaj kopię</button></div>');})).catch(()=>toast('Nie udało się odczytać pliku.'));}
 });
 document.addEventListener('submit',e=>{
+ if(['crm-record-form','crm-pick-form'].includes(e.target.id)){
+  e.preventDefault();const submit=e.target.querySelector('[type=submit]');
+  if(e.target.dataset.saving)return;
+  e.target.dataset.saving='true';if(submit)submit.disabled=true;
+  crmActions.onSubmit(e.target).catch(error=>toast(error.message)).finally(()=>{delete e.target.dataset.saving;if(submit)submit.disabled=false;});return;
+ }
  if(!['lead-form','activity-form','task-form','reward-form','settings-form'].includes(e.target.id))return;e.preventDefault();
  act(()=>{
  const form=e.target,data=new FormData(form),values=Object.fromEntries(data);
- if(form.id==='lead-form'){const old=state.leads.find(l=>l.id===form.dataset.id),l=C.makeLead(values);if(old){
-  for(const key of ['role','price','size','rooms'])delete old[key];
-  Object.assign(old,l,{id:old.id,createdAt:old.createdAt,archived:old.archived});
- }else {if(form.dataset.client)l.clientId=form.dataset.client;state.leads.push(l);}save();close();render();toast('Kontakt zapisany. Następny krok jest jasny.');}
+ if(form.id==='lead-form'){
+  const next=structuredClone(state),lead=C.makeLead(values);
+  const old=next.leads.find(item=>item.id===form.dataset.id);
+  if(form.dataset.id&&!old)throw Error('Sprawa klienta jest niedostępna.');
+  const clientId=old?.clientId||old?.id||form.dataset.client||lead.id;
+  if(old){
+   for(const key of ['role','price','size','rooms'])delete old[key];
+   Object.assign(old,lead,{id:old.id,createdAt:old.createdAt,archived:old.archived});
+  }else{
+   if(form.dataset.client)lead.clientId=clientId;
+   next.leads.push(lead);
+  }
+  for(const item of next.leads.filter(item=>(item.clientId||item.id)===clientId)){
+   item.name=lead.name;
+   item.phone=lead.phone;
+  }
+  C.validate(next);
+  const previous=state;
+  state=next;
+  if(!save()){state=previous;return;}
+  render();clientCard(old?.id||lead.id);toast('Sprawa zapisana.');
+ }
  if(form.id==='activity-form'){
   if(form.dataset.type==='call'&&values.outcome==='callback'){
    values.outcome='reached';

@@ -1,3 +1,4 @@
+import {validateCrm} from './crm-core.js';
 export const VERSION=2;
 export const TYPES={
  call:{label:'Telefon',short:'Telefony',xp:15,coins:10,influence:1,icon:'phone'},
@@ -172,6 +173,7 @@ export function validate(s){
   for(const key of ['role','price','rooms','size'])if(lead[key]!==details[key])fail();
  }
  for(const lead of s.leads)if(lead.clientId!==undefined&&(!leadIds.has(lead.clientId)||lead.clientId===lead.id))fail();
+ validateCrm(s.crm,s.leads);
  const milestones=new Set();
  for(const a of s.activities){checks(a);if(!Object.hasOwn(TYPES,a.type)||!(a.leadId===null||leadIds.has(a.leadId))||!str(a.leadName,100)||!str(a.note,300)||!isDay(a.day)||!Number.isFinite(a.time)||!['reached','declined','noanswer','done'].includes(a.outcome)||!int(a.commissionGrosz,1000000000)||typeof a.voided!=='boolean')fail();if(a.type!=='sale'&&a.commissionGrosz!==0)fail();if(['sale','mandate','listing'].includes(a.type)&&a.leadId&&!a.voided){const key=a.leadId+':'+a.type;if(milestones.has(key))fail();milestones.add(key);}}
  for(const t of s.tasks){checks(t);if(!str(t.title,160)||!t.title.trim()||!isDay(t.date)||!['none','daily'].includes(t.repeat)||!Object.hasOwn(TASK_REWARDS,t.tier)||!Array.isArray(t.steps)||t.steps.length>10||t.steps.some(x=>!str(x,160))||!Array.isArray(t.records)||t.records.length>100000||typeof t.archived!=='boolean')fail();const seen=new Set();for(const r of t.records){checks(r);if(!isDay(r.day)||!Number.isFinite(r.time)||!(r.occurrence==='once'||isDay(r.occurrence))||!int(r.step,(t.steps.length||1)-1))fail();const key=r.occurrence+':'+r.step;if(seen.has(key))fail();seen.add(key);for(const k of ['xp','coins','influence'])if(!int(r[k],1000))fail();}}
