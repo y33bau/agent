@@ -148,7 +148,7 @@ export default {
   const timer=setTimeout(()=>controller.abort(),25000);
   try{
    const result=await fetch(upstream.url,{method:'POST',headers:upstream.headers,
-    body:JSON.stringify(upstream.body),signal:controller.signal,redirect:'error'});
+    body:JSON.stringify(upstream.body),signal:controller.signal,redirect:'manual'});
    if(!result.ok){
     await result.body?.cancel();
     const error=[401,403,404].includes(result.status)?'provider_config':result.status===429?'provider_limit':result.status===402?'provider_billing':'provider_error';
