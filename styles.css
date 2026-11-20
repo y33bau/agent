@@ -5,15 +5,8 @@
 @media(max-width:650px){.workspace{padding:0 17px 95px}main{padding-top:25px}.page-heading{margin-bottom:22px}.page-heading h1{font-size:28px}.page-heading>.btn{padding:9px 11px;font-size:10px}.top-right #connection{display:none}.dashboard{grid-template-columns:1fr;gap:20px}.stack{gap:19px}.hero{min-height:306px;padding:24px}.hero h2{font-size:37px;max-width:290px}.hero-copy{width:85%}.hero-art{width:63%;height:230px;opacity:.45;right:-11%}.hero-kicker{font-size:7px;top:23px;right:18px}.hero .eyebrow{font-size:8px;letter-spacing:.12em}.hero .subtitle{max-width:255px;font-size:11px}.hero .row{margin-top:22px}.hero .btn{font-size:10px;padding:11px 12px}.kpi-grid{grid-template-columns:repeat(2,1fr);gap:11px;margin:18px 0}.kpi{padding:17px}.kpi strong{font-size:28px;margin-top:10px}.kpi-head{font-size:10px}.kpi small{font-size:9px}.panel{padding:20px;border-radius:18px}.lead-grid{grid-template-columns:1fr}.pipeline-summary{grid-template-columns:repeat(3,1fr)}.rooms,.rewards-grid{grid-template-columns:1fr}.room p{min-height:0}.room-icon{height:75px}.empire-hero{padding:22px;display:block}.empire-hero .city-mini{width:100%;height:180px;margin-top:17px}.badges{grid-template-columns:repeat(2,1fr)}.reward{display:grid;grid-template-columns:65px 1fr;align-items:center;gap:12px}.reward-art{height:85px;grid-row:span 2}.reward h3{padding-right:15px}.reward>.row{grid-column:2}.search{max-width:100%}.toolbar{align-items:stretch}.focus-bar{gap:9px;padding:10px 13px;width:max-content}.focus-caption strong{font-size:10px}.focus-caption small{font-size:8px}.focus-time{font-size:23px;min-width:62px}.focus-bar .btn{padding:8px;font-size:9px;min-height:34px}.focus-bar .icon-btn{width:23px}.form-grid{gap:10px}.choice-grid{grid-template-columns:repeat(2,1fr)}dialog{padding:22px}.history-row .amount{font-size:9px}.history-row h3{font-size:11px}.nav-item{font-size:8px}footer{font-size:7px}.coach p{font-size:11px}.lead-row{padding:12px}.hero h2 em{display:block}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.confetti{display:none}}
 
-/* Keep app settings reachable in the iPhone standalone safe area. */
-.mobile-settings{display:none}
 @media(max-width:900px){
-.topbar{position:sticky;top:0;z-index:30;min-height:calc(70px + env(safe-area-inset-top,0px));height:auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:0;background:#132b40;gap:12px}
-.topbar>.top-actions,.topbar>.top-right{flex-shrink:0}
-.topbar .avatar{display:none}
-.mobile-settings{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:110px;min-height:44px;padding:10px 12px;background:var(--gold);color:#132b40;border-radius:12px;font-size:12px;font-weight:650;white-space:nowrap}
-.mobile-settings>span:first-child{font-size:19px;line-height:1}
-.workspace{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.workspace{padding-top:env(safe-area-inset-top,0px);padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
 }
 
 /* CRM */
@@ -23,19 +16,10 @@
 .crm-quick .filter,.crm-card-actions .btn,.crm-toolbar summary{min-height:44px;font-size:14px}
 .crm-toolbar summary{display:list-item;cursor:pointer;padding:12px 0;color:var(--muted)}
 .crm-toolbar details .pipeline-summary{margin:10px 0 0}
-#lead-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-#lead-grid .lead-card{padding:22px}
-#lead-grid .lead-card h3{font-size:22px}
 #lead-grid .next-action{font-size:15px;overflow-wrap:anywhere}
-.crm-card-actions{margin-top:16px}
 .crm-card-actions .btn{justify-content:center;text-align:center;padding-inline:6px}
-@media(max-width:650px){#lead-grid{grid-template-columns:minmax(0,1fr)}}
 
 .followup-shortcuts .btn{min-height:44px}
-
-/* The agency and settings bar belongs in the More menu. */
-.workspace:not(:has(#main[data-view="more"])) > .topbar{display:none}
-@media(max-width:760px){.workspace:not(:has(#main[data-view="more"])){padding-top:env(safe-area-inset-top,0px)}}
 
 /* ATRIA: midnight blue, ivory and champagne. */
 :root{
@@ -71,14 +55,13 @@ body{background:radial-gradient(ellipse at 72% 0%,#203e55 0%,transparent 48rem),
 .hero h2{font-size:clamp(35px,4.1vw,57px);line-height:1.03;max-width:none}
 .hero .subtitle{font-size:13px;color:var(--muted)}
 .hero-art{filter:drop-shadow(0 0 16px #dfc58a40)}
-.btn.gold,.mobile-settings{
+.btn.gold{
  background:linear-gradient(135deg,#f0daa5,#c7a363);
  color:#172536;
  border:1px solid #f1d9a57a;
  box-shadow:0 4px 14px #08152136;
 }
 [data-action="draw-move"]{margin:12px 0 4px;min-height:46px}
-#lead-grid .lead-card h3{font:400 clamp(24px,4vw,30px)/1.15 Georgia,"Times New Roman",serif}
 #lead-grid .next-action{background:#0e21336e;border-color:#afcfe628}
 .crm-quick .filter.active{border-color:#dfc58a75;color:var(--gold)}
 .life-links .life-link{
@@ -155,6 +138,8 @@ dialog{background:#172e42;border-color:#dfc58a59}
 .nav-item{font-size:13px}
 .sidebar-bottom .settings-link{font-size:12px}
 .office-intro{
+ --section-photo:url("./assets/atria-architecture.webp");
+ --photo-position:55%;
  position:relative;isolation:isolate;overflow:hidden;
  border:1px solid #afcfe638;border-radius:26px;
  background:#142a3d;
@@ -163,8 +148,19 @@ dialog{background:#172e42;border-color:#dfc58a59}
 .office-intro::before{
  content:"";position:absolute;inset:0 0 0 36%;z-index:-1;
  background:linear-gradient(90deg,#142a3d 0%,#142a3d45 60%,#142a3d33),
-            url("./assets/atria-architecture.webp") center 55% / cover;
+            var(--section-photo) center var(--photo-position) / cover;
 }
+#main[data-view="pipeline"] .office-intro,#main[data-view="empire"] .office-intro{
+ --section-photo:url("./assets/atria-facade.webp");--photo-position:45%;
+}
+#main[data-view="field"] .office-intro,#main[data-view="portals"] .office-intro{
+ --section-photo:url("./assets/atria-city.webp");--photo-position:62%;
+}
+#main[data-view="more"] .office-intro,#main[data-view="missions"] .office-intro,
+#main[data-view="rewards"] .office-intro,#main[data-view="progress"] .office-intro{
+ --section-photo:url("./assets/atria-office.webp");--photo-position:49%;
+}
+.office-section-header{display:grid;align-items:center;min-height:210px;margin-bottom:20px}
 .office-intro-content{padding:clamp(22px,4vw,43px);max-width:615px}
 .office-agency{
  margin-bottom:10px;color:var(--gold);font-size:11px;font-weight:700;
@@ -175,6 +171,9 @@ dialog{background:#172e42;border-color:#dfc58a59}
  letter-spacing:-.045em;
 }
 .office-intro .subtitle{font-size:14px;color:#d9e6ee;max-width:34ch}
+.office-section-header .office-intro-content{padding-block:24px}
+.office-section-header h1{font-size:clamp(34px,4.4vw,56px)}
+.office-section-header .office-intro-actions{margin-top:14px}
 .office-intro-actions{margin-top:22px;gap:8px}
 .office-intro-actions .btn{font-size:13px;min-height:46px}
 .office-intro-actions .ghost{background:#102234;color:var(--cream);border-color:#bfd2df60}
@@ -196,39 +195,70 @@ dialog{background:#172e42;border-color:#dfc58a59}
 .office-shortcuts .btn .icon{color:var(--gold)}
 .crm-tabs{
  background:#0f2232;border:1px solid var(--line);border-radius:14px;
- padding:4px;gap:4px;max-width:550px;
+ padding:4px;gap:4px;
 }
 .crm-tabs .filter{background:transparent;border:1px solid transparent;border-radius:10px;font-size:13px}
 .crm-tabs .filter.active{background:#233d51;border-color:#afcfe638;color:var(--cream)}
-.crm-toolbar .search{max-width:none}
-.crm-toolbar:has([name="offer-status-filter"]){grid-template-columns:minmax(0,1fr) minmax(160px,220px);align-items:end}
-.crm-toolbar:has([name="offer-status-filter"]) .field{margin:0}
-.offer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.offer-card{display:flex;flex-direction:column;gap:9px;padding:18px;background:#172d40}
-.offer-card h3{font-size:19px;font-weight:600;line-height:1.2}
-.offer-facts{font-size:13px;color:#d9e6ee}
+.crm-workspace-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;margin-bottom:14px}
+.crm-workspace-bar>.btn{min-width:132px}
+.crm-workspace-bar .crm-tabs{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.crm-toolbar{padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:#142a3d;margin-bottom:14px}
+.crm-toolbar .field{margin:0;font-size:12px;min-width:0}
+.crm-toolbar .search{max-width:none;min-width:0}
+.crm-toolbar select{min-height:48px}
+.crm-toolbar:has([name="offer-status-filter"]){grid-template-columns:minmax(0,1fr) minmax(140px,220px);align-items:end}
+.crm-toolbar summary{min-height:0;padding-block:2px;color:var(--muted)}
+.crm-record-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.crm-record-card{
+ display:flex;flex-direction:column;gap:8px;padding:18px;
+ min-width:0;overflow-wrap:anywhere;background:#172d40;border-radius:18px;
+}
+.crm-record-card .section-head{margin:0;gap:7px;flex-wrap:wrap;min-height:25px}
+.crm-record-card h3{font:400 clamp(21px,2.5vw,27px)/1.15 Georgia,"Times New Roman",serif;margin:0}
+.record-facts{font-size:13px;color:#d9e6ee}
 .offer-client{font-size:12px;color:var(--muted)}
-.offer-card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:9px;border-top:1px solid var(--line)}
+.record-footer{margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
+.record-footer .btn{min-height:44px;font-size:12px}
+.offer-card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .offer-card-footer strong{color:var(--gold);font-size:17px}
-.offer-card-footer .btn{margin-top:0;margin-left:auto}
-.offer-empty{padding:26px}
+.offer-card-footer .btn{margin-left:auto}
+.crm-empty{padding:24px;border-radius:18px}
+.crm-record-card .next-action{margin:4px 0 6px}
 #modal:has(#crm-record-form,.client-tabs){max-width:690px}
 .crm-ai{background:#102539;border-color:#afcfe640;padding:15px}
 .crm-ai>summary{color:var(--gold);padding-block:5px}
 .crm-ai [data-ai-result]{background:#1b3449;margin-top:10px}
+.office-menu-grid,.office-more-grid{display:grid;gap:14px;margin-bottom:14px;align-items:start}
+.office-menu-grid{grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch}
+.office-more-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.office-menu-tile{
+ display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:10px;
+ padding:14px;min-height:76px;text-align:left;font-size:13px;font-weight:650;
+ background:#172d40;border:1px solid var(--line);border-radius:16px;
+}
+.office-menu-tile .icon{color:var(--gold)}
+.office-menu-tile:hover{background:#223d51}
 @media(max-width:760px){
  .nav-item{font-size:10px}
- .office-grid,.offer-grid{grid-template-columns:minmax(0,1fr)}
+ .office-grid,.crm-record-grid{grid-template-columns:minmax(0,1fr)}
+ .office-section-header{min-height:196px;margin-bottom:14px}
+ .office-section-header .office-intro-content{padding-block:20px}
+ .office-more-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
  .office-intro::before{inset:0;background:
-  linear-gradient(90deg,#102334fa 0%,#142a3deb 29%,#142a3d47 100%),
-  url("./assets/atria-architecture.webp") 62% 53% / cover}
+  linear-gradient(90deg,#102334fa 0%,#142a3ded 32%,#142a3d62 100%),
+  var(--section-photo) 62% var(--photo-position) / cover}
  .office-intro-actions .btn{padding-inline:11px}
 }
 @media(min-width:651px) and (max-width:760px){
  .office-metrics .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:480px){
+ .crm-workspace-bar{grid-template-columns:minmax(0,1fr)}
+ .crm-workspace-bar>.btn{min-height:44px;justify-self:end}
  .crm-toolbar:has([name="offer-status-filter"]){grid-template-columns:minmax(0,1fr)}
+ .office-more-grid{grid-template-columns:minmax(0,1fr)}
+ .office-menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .office-menu-grid>:last-child{grid-column:1/-1}
  .field input,.field select,.field textarea{font-size:16px}
  .office-intro .subtitle{max-width:25ch}
 }

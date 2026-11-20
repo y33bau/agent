@@ -21,15 +21,16 @@ const numberInput = (name,label,value,max) =>
  '<label class="field">'+label+'<input type="number" name="'+name+'" min="0.01" max="'+max+'" step="0.01" value="'+e(value)+'"></label>';
 
 export function crmTabs(current){
- return '<div class="crm-tabs" aria-label="Widoki CRM">'+[['leads','Leady i klienci'],['offers','Oferty']]
+ return '<div class="crm-tabs" role="group" aria-label="Widoki CRM">'+[['leads','Klienci i leady'],['offers','Oferty']]
   .map(([id,label])=>'<button class="filter '+(id===current?'active':'')+'" aria-pressed="'+(id===current)+'" data-action="crm-view" data-id="'+id+'">'+label+'</button>').join('')+'</div>';
 }
 function offerRow(offer, customer=''){
- const details=[TRANSACTION[offer.transaction],offer.property,offer.location,offer.area && offer.area+' m²'].filter(Boolean);
- return '<article class="crm-entry offer-card"><div class="section-head"><h3>'+e(offer.title)+'</h3><span class="stage-badge">'+OFFER_STATUS[offer.status]+'</span></div>'+
-  '<p class="offer-facts">'+details.map(e).join(' · ')+'</p>'+
+ const details=[offer.property,offer.location,offer.area && offer.area+' m²'].filter(Boolean);
+ return '<article class="panel crm-record-card"><div class="section-head"><span class="stage-badge">'+OFFER_STATUS[offer.status]+'</span>'+
+  '<span class="muted tiny">'+TRANSACTION[offer.transaction]+'</span></div><h3>'+e(offer.title)+'</h3>'+
+  '<p class="record-facts">'+details.map(e).join(' · ')+'</p>'+
   (customer?'<p class="offer-client">Klient: '+e(customer)+'</p>':'')+
-  '<div class="offer-card-footer">'+(offer.price!==null?'<strong>'+price(offer.price)+'</strong>':'')+btn('crm-offer-preview',offer.id,'Otwórz ofertę','ghost')+'</div></article>';
+  '<div class="record-footer offer-card-footer">'+(offer.price!==null?'<strong>'+price(offer.price)+'</strong>':'')+btn('crm-offer-preview',offer.id,'Otwórz ofertę','ghost')+'</div></article>';
 }
 export function offersView(state, filter, query){
  const {offers} = crmData(state);
@@ -37,10 +38,10 @@ export function offersView(state, filter, query){
  const matches = offers.filter(offer=>(filter==='all'||offer.status===filter) &&
   [offer.title,offer.location,offer.property,customer(offer)].join(' ').toLocaleLowerCase('pl').includes(query.trim().toLocaleLowerCase('pl')))
   .sort((a,b)=>b.updatedAt-a.updatedAt);
- return '<div class="crm-toolbar"><input class="search" aria-label="Szukaj oferty" placeholder="Tytuł, miejscowość lub klient" value="'+e(query)+'">'+
+ return '<div class="crm-toolbar"><label class="field">Szukaj oferty<input class="search" type="search" placeholder="Tytuł, miejscowość lub klient" value="'+e(query)+'"></label>'+
  select('offer-status-filter','Status',filter,{all:'Wszystkie',...OFFER_STATUS})+'</div>'+
- (matches.length?'<div class="offer-grid">'+matches.map(offer=>offerRow(offer,customer(offer))).join('')+'</div>':
-  '<section class="panel offer-empty"><h2>'+(offers.length?'Brak pasujących ofert':'Brak zapisanych ofert')+'</h2>'+
+ (matches.length?'<div class="crm-record-grid">'+matches.map(offer=>offerRow(offer,customer(offer))).join('')+'</div>':
+  '<section class="panel crm-empty"><h2>'+(offers.length?'Brak pasujących ofert':'Brak zapisanych ofert')+'</h2>'+
   (offers.length?blank('Zmień status lub wpisz inną frazę.'):blank('Kliknij „Nowa oferta”, aby powiązać ogłoszenie ze sprawą klienta.'))+'</section>');
 }
 export function clientSections(state, lead, timeline, view, overview){
@@ -51,7 +52,7 @@ export function clientSections(state, lead, timeline, view, overview){
  const contact = [client.phone,profile?.email].filter(Boolean).join(' · ');
  const notes = linked('notes').map(note=>({time:note.createdAt, html:item('<strong>'+NOTE_TYPES[note.type]+'</strong><small>'+date(note.createdAt)+'</small>'+line(note.body)+btn('crm-note-edit',note.id,'Edytuj'))}));
  const history = [...notes,...timeline].sort((a,b)=>b.time-a.time);
- const tabs='<div class="crm-tabs client-tabs" aria-label="Karta klienta">'+[['overview','Profil'],['offers','Oferty'],['documents','Dokumenty'],['history','Historia']].map(([id,label])=>'<button class="filter '+(view===id?'active':'')+'" aria-pressed="'+(view===id)+'" data-action="client-view" data-id="'+e(lead.id)+'" data-section="'+id+'">'+label+'</button>').join('')+'</div>';
+ const tabs='<div class="crm-tabs client-tabs" role="group" aria-label="Karta klienta">'+[['overview','Profil'],['offers','Oferty'],['documents','Dokumenty'],['history','Historia']].map(([id,label])=>'<button class="filter '+(view===id?'active':'')+'" aria-pressed="'+(view===id)+'" data-action="client-view" data-id="'+e(lead.id)+'" data-section="'+id+'">'+label+'</button>').join('')+'</div>';
  if(view==='overview') return tabs+section('Profil klienta',btn('crm-profile',lead.id,'Edytuj profil'),
   line(contact)+line(profile?.source && 'Źródło: '+profile.source)+line(profile?.summary)+(!contact&&!profile?.summary&&!profile?.source?blank('Uzupełnij dane i źródło kontaktu.') : ''))+overview;
  if(view==='offers') return tabs+section('Oferty',btn('crm-offer-add',lead.id,'Nowa oferta'),linked('offers').map(offer=>offerRow(offer)).join('')||blank('Brak zapisanych ofert.'));

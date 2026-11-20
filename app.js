@@ -17,6 +17,7 @@ const paths={
  camera:'M3 7h5l2-3h4l2 3h5v14H3zM16 13a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
  network:'M14 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0M12 4v6m0 4v6M4 12h6m4 0h6M8 5l3 5m2 4 3 5M5 8l5 3m4 2 5 3M5 16l5-3m4-2 5-3',
  spark:'m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z',
+ settings:'M5 7h14m-9 0V4m0 6V7m-5 5h14m-4 0V9m0 6v-3M5 17h14m-9 0v-3m0 6v-3',
  document:'M5 2h10l4 4v16H5zm10 0v5h4M8 12h8m-8 4h6',plus:'M12 5v14M5 12h14',clock:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0M12 7v5l3 2',check:'m5 12 4 4L19 6',coin:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0m-9-5v10m3-8h-4a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H8'
 };
 function icon(name){return '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="'+(paths[name]||paths.spark)+'"/></svg>';}
@@ -41,7 +42,15 @@ function celebrate(earned){
 }
 function dateLabel(day){return new Date(day+'T12:00:00').toLocaleDateString('pl-PL',{day:'numeric',month:'short'});}
 function datePill(day){return '<span class="date-pill '+(day<today()?'overdue':'')+'">'+(day===today()?'Dzisiaj':day<today()?'Do kontaktu · '+dateLabel(day):dateLabel(day))+'</span>';}
-function heading(title,sub,action='log',label='Zapisz działanie'){return '<div class="page-heading"><div><h1>'+title+'</h1><p class="subtitle">'+sub+'</p></div>'+(action?'<button class="btn gold" data-action="'+action+'">'+icon('plus')+label+'</button>':'')+'</div>';}
+function officeHeader(title,subtitle,actions='',agency=''){
+ return '<header class="office-intro'+(agency?' office-home':' office-section-header')+'"><div class="office-intro-content">'+
+  (agency?'<p class="office-agency">'+esc(agency)+'</p>':'')+
+  '<h1>'+title+'</h1>'+(subtitle?'<p class="subtitle">'+subtitle+'</p>':'')+
+  (actions?'<div class="row wrap office-intro-actions">'+actions+'</div>':'')+'</div></header>';
+}
+function heading(title,subtitle,action,label){
+ return officeHeader(title,subtitle,action?'<button class="btn gold" data-action="'+action+'">'+icon('plus')+label+'</button>':'');
+}
 function empty(title,sub,action,label,which='target'){return '<div class="empty">'+icon(which)+'<h3>'+title+'</h3><p>'+sub+'</p>'+(action?'<button class="btn ghost" data-action="'+action+'">'+label+'</button>':'')+'</div>';}
 function city(full=false){
  const {office,studio,network}=state.buildings,h=office*15;
@@ -122,11 +131,9 @@ function drawMove(){
 function dashboardView(){
  const due=C.dueLeads(state);
  return (notice?'<div class="notice">'+esc(notice)+'</div>':'')+
-  '<section class="office-intro"><div class="office-intro-content"><p class="office-agency">'+esc(state.settings.agency)+'</p>'+
-  '<h1>Pulpit agenta</h1><p class="subtitle">Klienci, nieruchomości i oferty w jednym miejscu.</p>'+
-  '<div class="row wrap office-intro-actions"><button class="btn gold" data-tab="pipeline">'+icon('users')+'Otwórz CRM</button>'+
-  '<button class="btn ghost" data-action="crm-offer-pick">'+icon('plus')+'Nowa oferta</button></div>'+
-  '</div></section>'+
+  officeHeader('Pulpit agenta','Klienci, nieruchomości i oferty w jednym miejscu.',
+   '<button class="btn gold" data-tab="pipeline">'+icon('users')+'Otwórz CRM</button>'+
+   '<button class="btn ghost" data-action="crm-offer-pick">'+icon('plus')+'Nowa oferta</button>',state.settings.agency)+
   '<section class="office-metrics" aria-labelledby="office-metrics-title"><h2 id="office-metrics-title">Aktywność biura</h2>'+kpis()+'</section>'+
   '<div class="office-grid"><div class="office-column">'+
   '<section class="panel office-followups"><div class="section-head"><h2>Do oddzwonienia</h2></div><div class="next-list">'+
@@ -143,15 +150,19 @@ function leadCard(lead){
  const id=esc(lead.id);
  const stage=C.STAGES.find(([key])=>key===lead.stage)[1];
  const role=C.CASE_ROLES[lead.role];
- return '<article class="panel lead-card"><div class="section-head"><span class="stage-badge">'+(role?role+' · ':'')+stage+'</span>'+datePill(lead.nextDate)+'</div>'+
-  '<h3>'+esc(lead.name)+'</h3><p class="lead-property">'+[lead.property,lead.area].filter(Boolean).map(esc).join(' · ')+'</p>'+
+ return '<article class="panel lead-card crm-record-card"><div class="section-head"><span class="stage-badge">'+(role?role+' · ':'')+stage+'</span>'+datePill(lead.nextDate)+'</div>'+
+  '<h3>'+esc(lead.name)+'</h3><p class="record-facts">'+[lead.property,lead.area].filter(Boolean).map(esc).join(' · ')+'</p>'+
   '<div class="next-action"><small>NASTĘPNY KROK</small>'+esc(lead.nextAction||'Ustal kolejny krok')+'</div>'+
-  '<div class="crm-card-actions"><button class="btn gold" data-action="client-card" data-id="'+id+'">Otwórz kartę</button>'+
+  '<div class="crm-card-actions record-footer"><button class="btn ghost" data-action="client-card" data-id="'+id+'">Otwórz kartę</button>'+
   '<button class="btn ghost" data-action="log-lead" data-id="'+id+'">Zapisz telefon</button></div></article>';
 }
 let crmView='leads',offerFilter='all',offerSearch='';
 function pipelineView(){
- if(crmView==='offers')return heading('Oferty nieruchomości','Szkice, opisy i oferty przypisane do klientów.','crm-offer-pick','Nowa oferta')+crmTabs(crmView)+offersView(state,offerFilter,offerSearch);
+ const showingOffers=crmView==='offers';
+ const workspace=heading('CRM nieruchomości','Sprawy klientów, terminy kontaktu i oferty.')+
+  '<div class="crm-workspace-bar">'+crmTabs(crmView)+'<button class="btn gold" data-action="'+
+  (showingOffers?'crm-offer-pick':'lead-add')+'">'+icon('plus')+(showingOffers?'Nowa oferta':'Dodaj lead')+'</button></div>';
+ if(showingOffers)return workspace+offersView(state,offerFilter,offerSearch);
  const counts=C.STAGES.filter(x=>x[0]!=='lost').map(([id,title])=>'<button class="stage-count filter '+(leadFilter==='stage:'+id?'active':'')+'" data-lead-filter="stage:'+id+'"><strong>'+state.leads.filter(l=>!l.archived&&l.stage===id).length+'</strong>'+title+'</button>').join('');
  let leads=state.leads.filter(l=>leadFilter==='archive'?l.archived:!l.archived);
  if(leadFilter==='active')leads=leads.filter(l=>!['won','lost'].includes(l.stage));
@@ -167,12 +178,13 @@ function pipelineView(){
  const filters=[['active','W toku'],['late','Zaległe'],['today','Dzisiaj'],['later','Nadchodzące']];
  const extraFilters=[['all','Wszystkie'],['won','Zamknięte'],['archive','Archiwum']];
  const filterButton=([id,label])=>'<button class="filter '+(leadFilter===id?'active':'')+'" aria-pressed="'+(leadFilter===id)+'" data-lead-filter="'+id+'">'+label+'</button>';
- return heading('Klienci i leady','Zarządzaj sprawami, etapami i terminami kontaktu.', 'lead-add','Dodaj lead')+crmTabs(crmView)+
-  '<div class="crm-toolbar"><input class="search" aria-label="Szukaj kontaktu" placeholder="Nazwisko, telefon, e-mail lub rejon" value="'+esc(search)+'">'+
+ return workspace+
+  '<div class="crm-toolbar"><label class="field">Szukaj kontaktu<input class="search" type="search" placeholder="Nazwisko, telefon, e-mail lub rejon" value="'+esc(search)+'"></label>'+
   '<div class="crm-quick">'+filters.map(filterButton).join('')+'</div>'+
   '<details '+(leadFilter.startsWith('stage:')||leadFilter.startsWith('role:')||extraFilters.some(([id])=>id===leadFilter)?'open':'')+'><summary>Więcej filtrów i etapy</summary>'+
   '<div class="filters">'+extraFilters.concat(Object.entries(C.CASE_ROLES).map(([id,label])=>['role:'+id,label])).map(filterButton).join('')+'</div><div class="pipeline-summary">'+counts+'</div></details></div>'+
-  '<div class="lead-grid" id="lead-grid">'+(leads.length?leads.map(leadCard).join(''):empty('Brak kontaktów w tym widoku.','Dodaj lead lub zmień filtr.','lead-add','Dodaj lead','users'))+'</div>';
+  (leads.length?'<div class="lead-grid crm-record-grid" id="lead-grid">'+leads.map(leadCard).join('')+'</div>':
+  '<section class="panel crm-empty"><h2>Brak kontaktów w tym widoku</h2><p class="subtitle">Dodaj lead lub zmień filtr.</p></section>');
 
 }
 function taskCard(t){
@@ -181,19 +193,24 @@ function taskCard(t){
 }
 function missionsView(){
  let tasks=state.tasks.filter(t=>taskFilter==='archive'?t.archived:!t.archived);if(taskFilter==='active')tasks=tasks.filter(t=>!C.taskDone(state,t,today()));if(taskFilter==='done')tasks=tasks.filter(t=>C.taskDone(state,t,today()));
- return heading('Plan, który zamieniasz w ruch.','Własne misje na zdjęcia, ogłoszenia, dokumenty i wszystkie sprawy pomiędzy.','task-add','Dodaj misję')+'<div class="dashboard"><div class="stack">'+challengesPanel()+'<section class="panel"><div class="toolbar"><h2>Twoje misje</h2><div class="filters">'+[['active','W toku'],['done','Zrobione'],['archive','Archiwum']].map(([v,l])=>'<button class="filter '+(taskFilter===v?'active':'')+'" data-task-filter="'+v+'">'+l+'</button>').join('')+'</div></div><div class="task-list">'+(tasks.length?tasks.map(taskCard).join(''):empty('Jedna konkretna rzecz na początek.','Podziel większe zadanie na małe kroki.','task-add','Dodaj misję'))+'</div></section></div><div class="stack"><section class="panel"><div class="eyebrow">GOTOWE PUNKTY STARTOWE</div><h2>Nie zaczynaj od pustej kartki.</h2><p class="subtitle">Dodaj misję, a potem dopasuj ją do swojej oferty.</p>'+[['offer','Przygotować ofertę nieruchomości'],['visit','Przygotować prezentację'],['follow','Uporządkować follow-upy']].map(([id,title])=>'<button class="btn ghost" style="width:100%;margin-top:12px" data-action="template" data-id="'+id+'">'+title+' ↗</button>').join('')+'</section><div class="coach"><div class="eyebrow">JEDNA ZASADA</div><p>Telefon i spotkanie zapisuj w działaniach. Misje zostaw na pozostałą pracę — dzięki temu statystyki pokazują to, co faktycznie zrobiłeś.</p></div></div></div>';
+ return heading('Misje','Zadania i cele na dziś.','task-add','Dodaj misję')+'<div class="dashboard"><div class="stack">'+challengesPanel()+'<section class="panel"><div class="toolbar"><h2>Twoje misje</h2><div class="filters">'+[['active','W toku'],['done','Zrobione'],['archive','Archiwum']].map(([v,l])=>'<button class="filter '+(taskFilter===v?'active':'')+'" data-task-filter="'+v+'">'+l+'</button>').join('')+'</div></div><div class="task-list">'+(tasks.length?tasks.map(taskCard).join(''):empty('Jedna konkretna rzecz na początek.','Podziel większe zadanie na małe kroki.','task-add','Dodaj misję'))+'</div></section></div><div class="stack"><section class="panel"><div class="eyebrow">GOTOWE PUNKTY STARTOWE</div><h2>Nie zaczynaj od pustej kartki.</h2><p class="subtitle">Dodaj misję, a potem dopasuj ją do swojej oferty.</p>'+[['offer','Przygotować ofertę nieruchomości'],['visit','Przygotować prezentację'],['follow','Uporządkować follow-upy']].map(([id,title])=>'<button class="btn ghost" style="width:100%;margin-top:12px" data-action="template" data-id="'+id+'">'+title+' ↗</button>').join('')+'</section><div class="coach"><div class="eyebrow">JEDNA ZASADA</div><p>Telefon i spotkanie zapisuj w działaniach. Misje zostaw na pozostałą pracę — dzięki temu statystyki pokazują to, co faktycznie zrobiłeś.</p></div></div></div>';
 }
-function empireView(){return heading('Budujesz więcej niż wynik.','Działania dają wpływ. Wpływ zamieniasz w rozwój swojego biura.',null)+'<section class="panel empire-hero"><div><div class="eyebrow">TWOJE IMPERIUM / '+esc(state.settings.agency)+'</div><h2 style="font-family:Georgia,serif;font-size:29px;font-weight:400">Własny adres.<br>Własne zasady.</h2><p class="subtitle">◇ '+number(C.balance(state).influence)+' wpływu do wykorzystania</p></div>'+city()+'</section><div class="rooms">'+C.BUILDINGS.map(b=>{const l=state.buildings[b.id],cost=C.upgradeCost(state,b.id);return '<section class="panel room" data-level="'+l+'"><div class="eyebrow">'+['OD CZEGOŚ SIĘ ZACZYNA','PIERWSZY ADRES','CORAZ WIĘKSZY ZASIĘG','PEŁEN POTENCJAŁ'][l]+'</div><div class="room-icon">'+icon(b.icon)+'</div><h2>'+b.name+'</h2><div class="room-level" aria-label="Poziom '+l+' z 3">'+[1,2,3].map(i=>'<span class="'+(l>=i?'on':'')+'"></span>').join('')+'</div><p>'+b.desc+'</p><button class="btn ghost" data-action="upgrade" data-id="'+b.id+'" '+(cost===null||C.balance(state).influence<cost?'disabled':'')+'>'+(cost===null?'✓ Maksymalny poziom':(l?'Rozbuduj':'Otwórz')+' · ◇ '+cost)+'</button></section>';}).join('')+'</div><div class="badges">'+C.badges(state).map(b=>'<div class="badge '+(b.unlocked?'unlocked':'')+'">'+icon(b.icon)+'<strong>'+b.title+'</strong><p>'+b.desc+'</p></div>').join('')+'</div>';}
-function rewardsView(){return heading('Wynik ma też smak nagrody.','Żetony są walutą gry. Odpoczynek nie wymaga żadnej zapłaty.','reward-add','Dodaj nagrodę')+'<div class="toolbar"><span class="btn ghost">'+icon('coin')+number(C.balance(state).coins)+' żetonów</span><span class="tiny muted">Nagrody wybierasz sam.</span></div><div class="rewards-grid">'+state.rewards.filter(r=>!r.archived).map((r,i)=>'<section class="panel reward"><button class="icon-btn" data-action="reward-edit" data-id="'+esc(r.id)+'" aria-label="Edytuj nagrodę">⋯</button><div class="reward-art">'+icon(['gift','spark','trophy'][i%3])+'</div><h3>'+esc(r.title)+'</h3><div class="row between"><span class="tiny" style="color:var(--gold)">◈ '+r.cost+' żetonów</span><button class="btn small ghost" data-action="redeem" data-id="'+esc(r.id)+'" '+(C.balance(state).coins<r.cost?'disabled':'')+'>Odbierz ↗</button></div></section>').join('')+'</div>';}
+function empireView(){return heading('Imperium','Rozbudowa biura i osiągnięcia.',null)+'<section class="panel empire-hero"><div><div class="eyebrow">TWOJE IMPERIUM / '+esc(state.settings.agency)+'</div><h2 style="font-family:Georgia,serif;font-size:29px;font-weight:400">Własny adres.<br>Własne zasady.</h2><p class="subtitle">◇ '+number(C.balance(state).influence)+' wpływu do wykorzystania</p></div>'+city()+'</section><div class="rooms">'+C.BUILDINGS.map(b=>{const l=state.buildings[b.id],cost=C.upgradeCost(state,b.id);return '<section class="panel room" data-level="'+l+'"><div class="eyebrow">'+['OD CZEGOŚ SIĘ ZACZYNA','PIERWSZY ADRES','CORAZ WIĘKSZY ZASIĘG','PEŁEN POTENCJAŁ'][l]+'</div><div class="room-icon">'+icon(b.icon)+'</div><h2>'+b.name+'</h2><div class="room-level" aria-label="Poziom '+l+' z 3">'+[1,2,3].map(i=>'<span class="'+(l>=i?'on':'')+'"></span>').join('')+'</div><p>'+b.desc+'</p><button class="btn ghost" data-action="upgrade" data-id="'+b.id+'" '+(cost===null||C.balance(state).influence<cost?'disabled':'')+'>'+(cost===null?'✓ Maksymalny poziom':(l?'Rozbuduj':'Otwórz')+' · ◇ '+cost)+'</button></section>';}).join('')+'</div><div class="badges">'+C.badges(state).map(b=>'<div class="badge '+(b.unlocked?'unlocked':'')+'">'+icon(b.icon)+'<strong>'+b.title+'</strong><p>'+b.desc+'</p></div>').join('')+'</div>';}
+function rewardsView(){return heading('Nagrody','Twoje nagrody i saldo żetonów.','reward-add','Dodaj nagrodę')+'<div class="toolbar"><span class="btn ghost">'+icon('coin')+number(C.balance(state).coins)+' żetonów</span><span class="tiny muted">Nagrody wybierasz sam.</span></div><div class="rewards-grid">'+state.rewards.filter(r=>!r.archived).map((r,i)=>'<section class="panel reward"><button class="icon-btn" data-action="reward-edit" data-id="'+esc(r.id)+'" aria-label="Edytuj nagrodę">⋯</button><div class="reward-art">'+icon(['gift','spark','trophy'][i%3])+'</div><h3>'+esc(r.title)+'</h3><div class="row between"><span class="tiny" style="color:var(--gold)">◈ '+r.cost+' żetonów</span><button class="btn small ghost" data-action="redeem" data-id="'+esc(r.id)+'" '+(C.balance(state).coins<r.cost?'disabled':'')+'>Odbierz ↗</button></div></section>').join('')+'</div>';}
 function progressView(){
  const week=C.totals(state,C.offsetDay(today(),-6),today()),days=Array.from({length:7},(_,i)=>C.offsetDay(today(),i-6)),counts=days.map(d=>state.activities.filter(a=>!a.voided&&a.day===d).length),max=Math.max(1,...counts);
  const history=[...state.activities.map(a=>({...a,kind:'activity'})),...state.purchases.map(p=>({...p,kind:'purchase'})),...state.upgrades.map(u=>({...u,kind:'upgrade'})),...state.claims.map(c=>({...c,kind:'bonus'}))].sort((a,b)=>b.time-a.time).slice(0,100);
- return heading('Czarno na białym. Twój postęp.','Prawdziwe działania, zapisane transakcje i dorobek, który zostaje.',null)+'<div class="dashboard"><section class="panel"><div class="section-head"><h2>Ruch z ostatnich 7 dni</h2><span class="tiny muted">'+counts.reduce((a,b)=>a+b,0)+' działań</span></div><div class="chart" role="img" aria-label="'+esc(days.map((d,i)=>d+': '+counts[i]+' działań').join(', '))+'">'+days.map((d,i)=>'<div class="chart-col"><strong>'+counts[i]+'</strong><div class="chart-bar" style="height:'+(counts[i]/max*100)+'px"></div><small>'+esc(new Date(d+'T12:00:00').toLocaleDateString('pl-PL',{weekday:'short'}))+'</small></div>').join('')+'</div><p class="subtitle tiny">'+week.calls+' telefonów · '+week.meetings+' spotkań · '+week.mandates+' umów · '+week.sales+' transakcji</p></section>'+profile()+'</div><section class="panel" style="margin-top:21px"><div class="section-head"><h2>Dziennik agenta</h2><span class="tiny muted">Ostatnie 100 wpisów</span></div><div class="history">'+(history.length?history.map(e=>{const type=e.kind==='activity'?C.TYPES[e.type]:null;return '<div class="history-row" style="'+(e.voided?'opacity:.4':'')+'"><div class="history-icon">'+icon(type?.icon||'spark')+'</div><div style="min-width:0;flex:1"><h3>'+esc(type?type.label+(e.leadName?' · '+e.leadName:''):e.kind==='purchase'?e.title:e.kind==='upgrade'?'Rozbudowa: '+C.BUILDINGS.find(b=>b.id===e.building).name:'Bonus dzienny')+'</h3><p>'+dateLabel(e.day)+' · '+esc(type?e.note||({reached:'Rozmowa',noanswer:'Brak odpowiedzi',declined:'Odmowa',done:'Zapisane działanie'}[e.outcome]):e.kind==='purchase'?'Odebrana nagroda':e.kind==='upgrade'?'Nowy poziom biura':'Cel wykonany')+(e.voided?' · COFNIĘTE':'')+'</p></div><span class="amount">'+(e.type==='sale'?money(e.commissionGrosz):type?'+'+type.xp+' XP':e.kind==='purchase'?'−'+e.cost+' ◈':e.kind==='upgrade'?'−'+e.cost+' ◇':'+'+e.xp+' XP')+'</span>'+(type&&!e.voided?'<button class="icon-btn" data-action="activity-undo" data-id="'+esc(e.id)+'" aria-label="Cofnij wpis">↶</button>':'')+'</div>';}).join(''):empty('Pierwszy wpis czeka na Ciebie.','Zapisz działanie, a zobaczysz je tutaj.','log','Zapisz działanie','chart'))+'</div></section>';
+ return heading('Postęp','Aktywność i historia transakcji.',null)+'<div class="dashboard"><section class="panel"><div class="section-head"><h2>Ruch z ostatnich 7 dni</h2><span class="tiny muted">'+counts.reduce((a,b)=>a+b,0)+' działań</span></div><div class="chart" role="img" aria-label="'+esc(days.map((d,i)=>d+': '+counts[i]+' działań').join(', '))+'">'+days.map((d,i)=>'<div class="chart-col"><strong>'+counts[i]+'</strong><div class="chart-bar" style="height:'+(counts[i]/max*100)+'px"></div><small>'+esc(new Date(d+'T12:00:00').toLocaleDateString('pl-PL',{weekday:'short'}))+'</small></div>').join('')+'</div><p class="subtitle tiny">'+week.calls+' telefonów · '+week.meetings+' spotkań · '+week.mandates+' umów · '+week.sales+' transakcji</p></section>'+profile()+'</div><section class="panel" style="margin-top:21px"><div class="section-head"><h2>Dziennik agenta</h2><span class="tiny muted">Ostatnie 100 wpisów</span></div><div class="history">'+(history.length?history.map(e=>{const type=e.kind==='activity'?C.TYPES[e.type]:null;return '<div class="history-row" style="'+(e.voided?'opacity:.4':'')+'"><div class="history-icon">'+icon(type?.icon||'spark')+'</div><div style="min-width:0;flex:1"><h3>'+esc(type?type.label+(e.leadName?' · '+e.leadName:''):e.kind==='purchase'?e.title:e.kind==='upgrade'?'Rozbudowa: '+C.BUILDINGS.find(b=>b.id===e.building).name:'Bonus dzienny')+'</h3><p>'+dateLabel(e.day)+' · '+esc(type?e.note||({reached:'Rozmowa',noanswer:'Brak odpowiedzi',declined:'Odmowa',done:'Zapisane działanie'}[e.outcome]):e.kind==='purchase'?'Odebrana nagroda':e.kind==='upgrade'?'Nowy poziom biura':'Cel wykonany')+(e.voided?' · COFNIĘTE':'')+'</p></div><span class="amount">'+(e.type==='sale'?money(e.commissionGrosz):type?'+'+type.xp+' XP':e.kind==='purchase'?'−'+e.cost+' ◈':e.kind==='upgrade'?'−'+e.cost+' ◇':'+'+e.xp+' XP')+'</span>'+(type&&!e.voided?'<button class="icon-btn" data-action="activity-undo" data-id="'+esc(e.id)+'" aria-label="Cofnij wpis">↶</button>':'')+'</div>';}).join(''):empty('Pierwszy wpis czeka na Ciebie.','Zapisz działanie, a zobaczysz je tutaj.','log','Zapisz działanie','chart'))+'</div></section>';
 }
 function moreView(){
  const stats=C.totals(state,today().slice(0,7)+'-01',today());
  const p=Math.min(100,stats.commissionGrosz/(state.settings.monthlyGoal*100)*100);
- return heading('Więcej','')+'<div class="row wrap">'+tabs.slice(5).map(([id,title])=>'<button class="btn" data-tab="'+id+'">'+title+'</button>').join('')+'<button class="btn" data-action="settings">Ustawienia</button></div><div class="stack">'+profile()+challengesPanel()+
+ const storageStatus=loadFailed?'Zapis wstrzymany':saveFailed?'Błąd zapisu':navigator.onLine?'':'Tryb offline';
+ return heading('Więcej','Narzędzia biura i ustawienia.')+
+ '<div class="office-menu-grid" aria-label="Narzędzia biura">'+tabs.slice(5).map(([id,title,symbol])=>
+  '<button class="office-menu-tile" data-tab="'+id+'">'+icon(symbol)+'<span>'+title+'</span></button>').join('')+
+  '<button class="office-menu-tile" data-action="settings">'+icon('settings')+'<span>Ustawienia</span></button></div>'+
+ (storageStatus?'<p class="notice">'+storageStatus+'</p>':'')+'<div class="office-more-grid">'+profile()+challengesPanel()+
  '<section class="panel money-panel"><div class="section-head"><h2>Prowizje miesiąca</h2>'+icon('chart')+'</div><div class="money-number">'+money(stats.commissionGrosz)+'</div><p class="money-caption">Rzeczywiste kwoty wpisane przy zamkniętych transakcjach. Żetony gry nie są pieniędzmi.</p><div class="target-line"><span>Twój cel: '+money(state.settings.monthlyGoal*100)+'</span><span>'+Math.round(p)+'%</span></div><div class="track"><div class="fill" style="width:'+p+'%"></div></div><button class="btn text" data-action="log-sale" style="margin-top:12px">Zapisz transakcję ↗</button></section>'+'</div>';
 }
 function caseSummary(lead){
@@ -228,11 +245,9 @@ function clientCard(id,view='overview'){
 const tabs=[['dashboard','Pulpit','grid'],['pipeline','CRM','users'],['field','Teren','phone'],['portals','Portale','building'],['more','Więcej','grid'],['missions','Misje','target'],['empire','Imperium','building'],['rewards','Nagrody','gift'],['progress','Postęp','chart']];
 function render(){
  document.body.classList.toggle('calm',!state.settings.motion);
- $('#agency-label').textContent=state.settings.agency;$('#view-label').textContent=tabs.find(t=>t[0]===tab)[1];$('.avatar').textContent=state.settings.name.slice(0,1).toUpperCase()||'A';
- $('#connection').textContent=loadFailed?'● Zapis wstrzymany':saveFailed?'● Błąd zapisu':navigator.onLine?'● Zapis lokalny':'● Tryb offline';
  $('#nav').innerHTML=tabs.slice(0,5).map(([id,title,i])=>'<button class="nav-item '+((id===tab||id==='more'&&tabs.slice(5).some(item=>item[0]===tab))?'active':'')+'" data-tab="'+id+'" '+((id===tab||id==='more'&&tabs.slice(5).some(item=>item[0]===tab))?'aria-current="page"':'')+'>'+icon(i)+'<span>'+title+'</span></button>').join('');
  $('#main').setAttribute?.('data-view',tab);
- $('#main').innerHTML=({field:()=>heading('Teren',''),portals:()=>heading('Portale',''),more:moreView,dashboard:dashboardView,pipeline:pipelineView,missions:missionsView,empire:empireView,rewards:rewardsView,progress:progressView}[tab])();
+ $('#main').innerHTML=({field:()=>heading('Teren','Kontakty i notatki pod ręką.'),portals:()=>heading('Portale','Strona biura, Facebook i serwisy ogłoszeniowe.'),more:moreView,dashboard:dashboardView,pipeline:pipelineView,missions:missionsView,empire:empireView,rewards:rewardsView,progress:progressView}[tab])();
  state.lastVisit=today();save();renderFocus();
 }
 function modal(title,body){lastTrigger=document.activeElement;$('#modal-content').innerHTML='<div class="modal-head"><h2 id="modal-title">'+esc(title)+'</h2><button class="icon-btn" data-action="close" aria-label="Zamknij">×</button></div>'+body;if(!$('#modal').open)$('#modal').showModal();$('#modal').scrollTop=0;}
