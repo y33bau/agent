@@ -61,22 +61,25 @@ export function clientSections(state, lead, timeline, view, overview){
 function aiPanel(){
  return '<details class="crm-ai" data-ai-panel><summary>Stwórz ofertę z AI</summary>'+
   '<label class="field">Cechy do ogłoszenia<textarea data-ai-features maxlength="1800" rows="3" placeholder="Np. 3 pokoje, balkon od południa, osobna kuchnia"></textarea></label>'+
-  '<p class="subtitle">Skopiuj polecenie z danymi nieruchomości, wklej je w ChatGPT i zaimportuj odpowiedź. W cechach wpisuj tylko informacje przeznaczone do ogłoszenia.</p>'+
+  '<p class="subtitle">Cloudflare AI przygotuje szkic z pól oferty. W cechach wpisuj tylko informacje przeznaczone do ogłoszenia.</p>'+
+  '<button type="button" class="btn gold" data-ai-action="generate-cloudflare">Generuj szkic</button>'+
+  '<p class="subtitle" data-ai-status role="status" aria-live="polite"></p>'+
+  '<section class="crm-entry" data-ai-result hidden><strong data-ai-draft-title></strong><label class="field">Opis oferty<textarea data-ai-draft-description rows="7" readonly></textarea></label>'+
+  '<label class="field">Skrót do skopiowania<textarea data-ai-draft-short rows="3" readonly></textarea></label>'+
+  '<p class="subtitle" data-ai-draft-missing></p><button type="button" class="btn gold" data-ai-action="apply">Wstaw tytuł i opis</button></section>'+
+  '<details><summary>Ręczny import z ChatGPT</summary>'+
   '<div class="row wrap"><button type="button" class="btn gold" data-ai-action="copy-chatgpt">Kopiuj dane do ChatGPT</button>'+
   '<a class="btn ghost" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">Otwórz ChatGPT</a></div>'+
   '<label class="field" data-ai-copy-fallback hidden>Polecenie do ręcznego skopiowania<textarea data-ai-prompt rows="5" readonly></textarea></label>'+
   '<label class="field">Odpowiedź z ChatGPT<textarea data-ai-import-text rows="4" maxlength="65536" spellcheck="false" placeholder="Wklej odpowiedź z ChatGPT"></textarea></label>'+
-  '<button type="button" class="btn ghost" data-ai-action="import-chatgpt">Importuj szkic</button>'+
-  '<details><summary>Generator przez API</summary>'+
-  '<label class="field">Dostawca<select data-ai-provider><option value="openai">OpenAI</option><option value="anthropic">Claude</option><option value="gemini">Gemini</option></select></label>'+
-  '<details><summary>Połączenie z generatorem</summary><label class="field">Adres Cloudflare Workera<input data-ai-url type="url" placeholder="https://atria-offer-ai.ad-szelag.workers.dev" autocomplete="off"></label>'+
+  '<button type="button" class="btn ghost" data-ai-action="import-chatgpt">Importuj szkic</button></details>'+
+  '<details data-ai-settings><summary>Ustawienia generatora</summary>'+
+  '<label class="field">Adres Cloudflare Workera<input data-ai-url type="url" placeholder="https://atria-offer-ai.ad-szelag.workers.dev" autocomplete="off"></label>'+
   '<label class="field">Kod dostępu do generatora<input data-ai-token type="password" maxlength="256" autocomplete="off"></label>'+
-  '<div class="row wrap"><button type="button" class="btn ghost" data-ai-action="check">Połącz</button><button type="button" class="btn text" data-ai-action="forget">Usuń połączenie</button></div><p class="subtitle" data-ai-connect-status role="status" aria-live="polite"></p></details>'+
-  '<button type="button" class="btn gold" data-ai-action="generate">Generuj szkic</button></details>'+
-  '<p class="subtitle" data-ai-status role="status" aria-live="polite"></p>'+
-  '<section class="crm-entry" data-ai-result hidden><strong data-ai-draft-title></strong><label class="field">Opis oferty<textarea data-ai-draft-description rows="7" readonly></textarea></label>'+
-  '<label class="field">Skrót do skopiowania<textarea data-ai-draft-short rows="3" readonly></textarea></label>'+
-  '<p class="subtitle" data-ai-draft-missing></p><button type="button" class="btn gold" data-ai-action="apply">Wstaw tytuł i opis</button></section></details>';
+  '<div class="row wrap"><button type="button" class="btn ghost" data-ai-action="check">Połącz</button><button type="button" class="btn text" data-ai-action="forget">Usuń połączenie</button></div><p class="subtitle" data-ai-connect-status role="status" aria-live="polite"></p>'+
+  '<details><summary>Inni dostawcy przez API</summary>'+
+  '<label class="field">Dostawca<select data-ai-provider><option value="openai">OpenAI</option><option value="anthropic">Claude</option><option value="gemini">Gemini</option></select></label>'+
+  '<button type="button" class="btn ghost" data-ai-action="generate">Generuj u wybranego dostawcy</button></details></details></details>';
 }
 export function crmForm(kind, lead, record){
  const data = record ?? {};

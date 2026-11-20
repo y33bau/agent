@@ -1,6 +1,6 @@
 const key='atria-offer-ai-config-v1';
 const defaultWorker='https://atria-offer-ai.ad-szelag.workers.dev';
-const labels={openai:'OpenAI',anthropic:'Claude',gemini:'Gemini'};
+const labels={cloudflare:'Cloudflare AI',openai:'OpenAI',anthropic:'Claude',gemini:'Gemini'};
 const errors={
  unauthorized:'Kod dostępu do generatora jest nieprawidłowy.',
  worker_setup:'Na Workerze brakuje poprawnego kodu ATRIA_AI_TOKEN. Ustaw od 10 do 128 znaków.',
@@ -10,6 +10,8 @@ const errors={
  provider_limit:'Dostawca zgłosił limit użycia lub brak środków.',
  provider_billing:'Sprawdź rozliczenia konta API u dostawcy.',
  provider_error:'Dostawca nie przyjął zapytania. Spróbuj ponownie lub zmień dostawcę.',
+ cloudflare_limit:'Wykorzystano dzienny limit Workers AI. Spróbuj po odnowieniu limitu.',
+ cloudflare_error:'Cloudflare AI jest chwilowo niedostępne. Spróbuj ponownie.',
  local_limit:'Osiągnięto limit generatora. Spróbuj za minutę.',
  invalid_input:'Uzupełnij typ nieruchomości i miejscowość. Sprawdź długość opisu cech.',
  invalid_draft:'AI zwróciło niepełny szkic. Spróbuj ponownie lub zmień dostawcę.',
@@ -42,13 +44,14 @@ function restore(form){
  const url=find(form,'url'), token=find(form,'token');
  if(!url.value)url.value=current.url || defaultWorker;
  if(!token.value)token.value=current.token || '';
- if(Object.hasOwn(labels,current.provider))find(form,'provider').value=current.provider;
+ const provider=find(form,'provider');
+ if([...provider.options].some(option=>option.value===current.provider))provider.value=current.provider;
  return instance;
 }
 function setProviders(form,providers){
  const select=find(form,'provider');
  for(const option of select.options)option.disabled=!providers.includes(option.value);
- if(!providers.includes(select.value))select.value=providers[0] || '';
+ if(!providers.includes(select.value))select.value=[...select.options].find(option=>!option.disabled)?.value || '';
 }
 function authorization(token){
  const bytes=new TextEncoder().encode(token);
@@ -70,6 +73,9 @@ async function request(config,path,body){
  }catch{throw Error(controller.signal.aborted?'Przekroczono czas oczekiwania.':'Nie udało się połączyć z Workerem. Sprawdź adres i internet.');}
  finally{clearTimeout(timer);}
  if(!response.ok || !data){
+  if(body?.provider==='cloudflare' && data?.error==='provider_setup'){
+   throw Error('Sprawdź, czy Worker ma włączone Cloudflare AI i jest zaktualizowany.');
+  }
   if(data?.error==='provider_config'){
    const name=labels[body?.provider] || 'Dostawca AI';
    const detail={
@@ -195,6 +201,12 @@ document.addEventListener('click',async event=>{
    status(form,'Usunięto konfigurację z tego urządzenia.',target);
    return;
   }
+  if(action==='generate-cloudflare' && !find(form,'token').value.trim()){
+   find(form,'settings').open=true;
+   find(form,'token').focus();
+   status(form,'Wpisz swój dotychczasowy kod dostępu do generatora.');
+   return;
+  }
   const config=configFrom(form);
   instance.busy=true;
   ownsRequest=true;
@@ -205,21 +217,22 @@ document.addEventListener('click',async event=>{
    if(!Array.isArray(providers))throw Error('Worker nie zwrócił listy dostawców.');
    setProviders(form,providers);
    localStorage.setItem(key,JSON.stringify({...config,provider:find(form,'provider').value}));
-   status(form,providers.length?'Połączono. Dostępni dostawcy: '+providers.map(id=>labels[id]).filter(Boolean).join(', ')+'.':'Połączono z Workerem. Dodaj klucz API wybranego dostawcy w Cloudflare.',target);
+   status(form,providers.length?'Połączono. Dostępni dostawcy: '+providers.map(id=>labels[id]).filter(Boolean).join(', ')+'.':'Połączono z Workerem. Włącz Cloudflare AI w konfiguracji Workera.',target);
    return;
   }
-  if(action==='generate'){
-   if(!Object.hasOwn(labels,config.provider))throw Error('Wybierz dostawcę AI.');
+  if(action==='generate' || action==='generate-cloudflare'){
+   const provider=action==='generate-cloudflare'?'cloudflare':config.provider;
+   if(!Object.hasOwn(labels,provider))throw Error('Wybierz dostawcę AI.');
    const facts=factsFrom(form);
    status(form,'Tworzę szkic…');
    find(form,'result').hidden=true;
-   const {draft}=await request(config,'/v1/offers',{provider:config.provider,facts});
+   const {draft}=await request(config,'/v1/offers',{provider,facts});
    if(!draft || ['title','description','short'].some(name=>typeof draft[name]!=='string') ||
       !Array.isArray(draft.missing) || draft.title.length>160 || draft.description.length>8000 || draft.short.length>650){
     throw Error(errors.invalid_draft);
    }
    instance.draft=draft;
-   draftPreview(form,draft,labels[config.provider]);
+   draftPreview(form,draft,labels[provider]);
    localStorage.setItem(key,JSON.stringify(config));
   }
  }catch(error){status(form,error.message || 'Generator jest chwilowo niedostępny.',target);}
