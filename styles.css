@@ -146,4 +146,4 @@ dialog{background:#172e42;border-color:#dfc58a59}
 .crm-ai details { margin:12px 0; }
 .crm-ai > button { margin-top:12px; }
 .crm-ai [data-ai-status]:empty, .crm-ai [data-ai-connect-status]:empty { display:none; }
-.crm-ai [data-ai-result][hidden] { display:none; }
+.crm-ai [data-ai-result][hidden], .crm-ai [data-ai-copy-fallback][hidden] { display:none; }

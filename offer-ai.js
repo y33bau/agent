@@ -89,7 +89,7 @@ function draftPreview(form,draft,provider){
  find(form,'draft-description').value=draft.description;
  find(form,'draft-short').value=draft.short;
  find(form,'draft-missing').textContent=draft.missing.length?'Do uzupełnienia: '+draft.missing.join(', '):'';
- status(form,'Szkic gotowy • '+labels[provider]);
+ status(form,'Szkic gotowy • '+provider);
 }
 function factsFrom(form){
  const facts=Object.fromEntries(['transaction','property','location','price','area']
@@ -97,6 +97,56 @@ function factsFrom(form){
  facts.features=find(form,'features').value.trim();
  if(!facts.property || !facts.location)throw Error('Uzupełnij typ nieruchomości i miejscowość.');
  return facts;
+}
+function chatGptPrompt(facts){
+ const listing={
+  'Rodzaj transakcji':facts.transaction==='rent'?'Najem':'Sprzedaż',
+  'Typ nieruchomości':facts.property,
+  'Miejscowość lub rejon':facts.location,
+  'Cena w PLN':facts.price,
+  'Powierzchnia w m²':facts.area,
+  'Cechy':facts.features
+ };
+ return [
+  'Przygotuj po polsku szkic ogłoszenia nieruchomości dla ATRIA na podstawie poniższych danych. Używaj wyłącznie podanych faktów. Puste pola pomiń w opisie. Nie dopisuj szczegółów ani danych kontaktowych.',
+  'Zwróć wyłącznie jeden poprawny obiekt JSON. Pola: title (tytuł, maks. 160 znaków), description (opis, maks. 8000 znaków), short (krótka wersja, maks. 650 znaków), missing (tablica krótkich nazw istotnych brakujących danych, pusta jeśli żadnych nie ma).',
+  JSON.stringify(listing,null,2)
+ ].join('\n\n');
+}
+function parseChatGptDraft(value){
+ const input=value.trim();
+ if(!input)throw Error('Wklej odpowiedź z ChatGPT.');
+ if(input.length>65536)throw Error('Odpowiedź jest za długa. Poproś ChatGPT o krótszy szkic.');
+ const block=input.match(/```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```/i);
+ let draft;
+ try{draft=JSON.parse(block?.[1] ?? input);}catch{
+  throw Error('Nie udało się odczytać szkicu. Poproś ChatGPT o sam JSON i wklej cały wynik.');
+ }
+ const title=typeof draft?.title==='string'?draft.title.trim():'';
+ const description=typeof draft?.description==='string'?draft.description.trim():'';
+ if(!title || !description)throw Error('W szkicu brakuje tytułu lub opisu. Poproś ChatGPT o pełny wynik.');
+ const short=typeof draft.short==='string'?draft.short.trim():'';
+ if(title.length>160 || description.length>8000 || short.length>650){
+  throw Error('Szkic przekracza limit długości. Poproś ChatGPT o krótszy tytuł, opis lub skrót.');
+ }
+ const missing=Array.isArray(draft.missing)?draft.missing.filter(item=>typeof item==='string').map(item=>item.trim()).filter(Boolean):[];
+ return {title,description,short,missing};
+}
+async function copyChatGptPrompt(form){
+ const prompt=chatGptPrompt(factsFrom(form));
+ const fallback=find(form,'copy-fallback');
+ try{
+  await navigator.clipboard.writeText(prompt);
+  fallback.hidden=true;
+  status(form,'Skopiowano. Otwórz ChatGPT i wklej polecenie.');
+ }catch{
+  const field=find(form,'prompt');
+  field.value=prompt;
+  fallback.hidden=false;
+  field.focus();
+  field.select();
+  status(form,'Skopiuj polecenie ręcznie z widocznego pola.');
+ }
 }
 function applyDraft(form,draft){
  const title=form.elements.namedItem('title'), description=form.elements.namedItem('description');
@@ -129,6 +179,14 @@ document.addEventListener('click',async event=>{
   instance=restore(form);
   if(instance.busy){status(form,'Poczekaj na zakończenie bieżącego żądania.',target);return;}
   if(action==='apply' && instance.draft){applyDraft(form,instance.draft);return;}
+  if(action==='copy-chatgpt'){await copyChatGptPrompt(form);return;}
+  if(action==='import-chatgpt'){
+   instance.draft=null;
+   find(form,'result').hidden=true;
+   instance.draft=parseChatGptDraft(find(form,'import-text').value);
+   draftPreview(form,instance.draft,'ChatGPT');
+   return;
+  }
   if(action==='forget'){
    localStorage.removeItem(key);
    find(form,'url').value=defaultWorker;
@@ -161,7 +219,7 @@ document.addEventListener('click',async event=>{
     throw Error(errors.invalid_draft);
    }
    instance.draft=draft;
-   draftPreview(form,draft,config.provider);
+   draftPreview(form,draft,labels[config.provider]);
    localStorage.setItem(key,JSON.stringify(config));
   }
  }catch(error){status(form,error.message || 'Generator jest chwilowo niedostępny.',target);}
