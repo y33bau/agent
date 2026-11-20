@@ -64,7 +64,7 @@ function aiPanel(){
   '<label class="field">Cechy do ogłoszenia<textarea data-ai-features maxlength="1800" rows="3" placeholder="Np. 3 pokoje, balkon od południa, osobna kuchnia"></textarea></label>'+
   '<p class="subtitle">Do dostawcy trafią typ, miejscowość lub rejon, cena, metraż, rodzaj transakcji i wpisane cechy. Wpisuj tu tylko informacje przeznaczone do ogłoszenia.</p>'+
   '<details><summary>Połączenie z generatorem</summary><label class="field">Adres Cloudflare Workera<input data-ai-url type="url" placeholder="https://atria-offer-ai.ad-szelag.workers.dev" autocomplete="off"></label>'+
-  '<label class="field">Kod dostępu do generatora<input data-ai-token type="password" maxlength="128" autocomplete="off"></label>'+
+  '<label class="field">Kod dostępu do generatora<input data-ai-token type="password" maxlength="256" autocomplete="off"></label>'+
   '<div class="row wrap"><button type="button" class="btn ghost" data-ai-action="check">Połącz</button><button type="button" class="btn text" data-ai-action="forget">Usuń połączenie</button></div><p class="subtitle" data-ai-connect-status role="status" aria-live="polite"></p></details>'+
   '<button type="button" class="btn gold" data-ai-action="generate">Generuj szkic</button>'+
   '<p class="subtitle" data-ai-status role="status" aria-live="polite"></p>'+

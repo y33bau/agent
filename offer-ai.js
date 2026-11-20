@@ -28,7 +28,10 @@ function configFrom(form){
   throw Error('Wklej adres Workera w domenie workers.dev, bez dodatkowej ścieżki.');
  }
  const token=find(form,'token').value.trim();
- if(!/^[a-zA-Z0-9_-]{10,128}$/.test(token)) throw Error('Kod dostępu musi mieć od 10 do 128 znaków. Użyj liter, cyfr, myślników lub podkreśleń.');
+ const length=[...token].length;
+ if(length<10) throw Error('Kod ma '+length+' znaków. Minimum to 10.');
+ if(length>128) throw Error('Kod może mieć maksymalnie 128 znaków.');
+ if(/\p{Cc}/u.test(token)) throw Error('Kod zawiera znak sterujący, np. tabulator lub koniec linii.');
  return {url:url.origin,token,provider:find(form,'provider').value};
 }
 function status(form,message,target='status'){find(form,target).textContent=message;}
@@ -47,6 +50,11 @@ function setProviders(form,providers){
  for(const option of select.options)option.disabled=!providers.includes(option.value);
  if(!providers.includes(select.value))select.value=providers[0] || '';
 }
+function authorization(token){
+ const bytes=new TextEncoder().encode(token);
+ const encoded=btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+ return 'Bearer atria-v2.'+encoded;
+}
 async function request(config,path,body){
  let response,data;
  const controller=new AbortController();
@@ -54,7 +62,7 @@ async function request(config,path,body){
  try{
   response=await fetch(config.url+path,{
    method:body?'POST':'GET',
-   headers:{Authorization:'Bearer '+config.token,...(body?{'Content-Type':'application/json'}:{})},
+   headers:{Authorization:authorization(config.token),...(body?{'Content-Type':'application/json'}:{})},
    body:body?JSON.stringify(body):undefined,
    signal:controller.signal,cache:'no-store',redirect:'error'
   });

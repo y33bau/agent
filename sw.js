@@ -1,4 +1,4 @@
-const CACHE='agent-empire-v2.7.3';
+const CACHE='agent-empire-v2.7.4';
 const CORE=['./offer-ai.js','./crm-core.js','./crm-ui.js','./crm-actions.js','./crm-files.js','./sync-crypto.js','./companion.js','./companion-core.js','./app-bridge.js','./sync.js','./features.js','./updates.js','./','./index.html','./styles.css','./core.js','./app.js','./notifications.js','./notification-core.js','./manifest.webmanifest','./assets/empire.svg','./assets/empire-maskable.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE.map(url=>new Request(url,{cache:'reload'})))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('agent-empire-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
