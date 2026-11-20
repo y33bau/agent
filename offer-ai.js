@@ -1,4 +1,5 @@
 const key='atria-offer-ai-config-v1';
+const defaultWorker='https://atria-offer-ai.ad-szelag.workers.dev';
 const labels={openai:'OpenAI',anthropic:'Claude',gemini:'Gemini'};
 const errors={
  unauthorized:'Kod dostępu do generatora jest nieprawidłowy.',
@@ -26,16 +27,17 @@ function configFrom(form){
   throw Error('Wklej adres Workera w domenie workers.dev, bez dodatkowej ścieżki.');
  }
  const token=find(form,'token').value.trim();
- if(!/^[a-zA-Z0-9_-]{32,128}$/.test(token)) throw Error('Wpisz kod dostępu do generatora.');
+ if(!/^[a-zA-Z0-9_-]{32,128}$/.test(token)) throw Error('Kod dostępu musi mieć od 32 do 128 znaków. Użyj liter, cyfr, myślników lub podkreśleń.');
  return {url:url.origin,token,provider:find(form,'provider').value};
 }
-function status(form,message){find(form,'status').textContent=message;}
+function status(form,message,target='status'){find(form,target).textContent=message;}
 function restore(form){
  if(instances.has(form)) return instances.get(form);
  const current=storedConfig(), instance={draft:null,busy:false};
  instances.set(form,instance);
- find(form,'url').value=current.url || '';
- find(form,'token').value=current.token || '';
+ const url=find(form,'url'), token=find(form,'token');
+ if(!url.value)url.value=current.url || defaultWorker;
+ if(!token.value)token.value=current.token || '';
  if(Object.hasOwn(labels,current.provider))find(form,'provider').value=current.provider;
  return instance;
 }
@@ -45,16 +47,19 @@ function setProviders(form,providers){
  if(!providers.includes(select.value))select.value=providers[0] || '';
 }
 async function request(config,path,body){
- let response;
+ let response,data;
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),32000);
  try{
   response=await fetch(config.url+path,{
    method:body?'POST':'GET',
    headers:{Authorization:'Bearer '+config.token,...(body?{'Content-Type':'application/json'}:{})},
    body:body?JSON.stringify(body):undefined,
-   signal:AbortSignal.timeout(32000),cache:'no-store',redirect:'error'
+   signal:controller.signal,cache:'no-store',redirect:'error'
   });
- }catch(error){throw Error(error.name==='TimeoutError'?'Przekroczono czas oczekiwania.':'Nie udało się połączyć z Workerem. Sprawdź adres i internet.');}
- const data=await response.json().catch(()=>null);
+  data=await response.json().catch(error=>{if(controller.signal.aborted)throw error;return null;});
+ }catch{throw Error(controller.signal.aborted?'Przekroczono czas oczekiwania.':'Nie udało się połączyć z Workerem. Sprawdź adres i internet.');}
+ finally{clearTimeout(timer);}
  if(!response.ok || !data){
   if(data?.error==='provider_config'){
    const name=labels[body?.provider] || 'Dostawca AI';
@@ -99,35 +104,41 @@ document.addEventListener('toggle',event=>{
  if(form && event.target.matches('[data-ai-panel]') && event.target.open)restore(form);
 },true);
 document.addEventListener('keydown',event=>{
- if(event.key==='Enter' && event.target.matches('[data-ai-url],[data-ai-token]'))event.preventDefault();
+ if(event.key==='Enter' && event.target.matches('[data-ai-url],[data-ai-token]')){
+  event.preventDefault();
+  event.target.closest('form')?.querySelector('[data-ai-action=check]')?.click();
+ }
 });
 document.addEventListener('click',async event=>{
  const button=event.target.closest('[data-ai-action]');
  const form=button?.closest('#crm-record-form[data-kind=offer]');
  if(!form) return;
- const instance=restore(form);
- if(instance.busy) return;
  const action=button.dataset.aiAction;
+ const target=['check','forget'].includes(action)?'connect-status':'status';
+ let instance,ownsRequest=false;
  try{
+  instance=restore(form);
+  if(instance.busy){status(form,'Poczekaj na zakończenie bieżącego żądania.',target);return;}
   if(action==='apply' && instance.draft){applyDraft(form,instance.draft);return;}
   if(action==='forget'){
    localStorage.removeItem(key);
-   find(form,'url').value='';
+   find(form,'url').value=defaultWorker;
    find(form,'token').value='';
    setProviders(form,Object.keys(labels));
-   status(form,'Usunięto konfigurację z tego urządzenia.');
+   status(form,'Usunięto konfigurację z tego urządzenia.',target);
    return;
   }
   const config=configFrom(form);
   instance.busy=true;
+  ownsRequest=true;
   button.disabled=true;
   if(action==='check'){
-   status(form,'Sprawdzam połączenie…');
+   status(form,'Sprawdzam połączenie…',target);
    const {providers}=await request(config,'/v1/providers');
    if(!Array.isArray(providers))throw Error('Worker nie zwrócił listy dostawców.');
    setProviders(form,providers);
    localStorage.setItem(key,JSON.stringify({...config,provider:find(form,'provider').value}));
-   status(form,providers.length?'Skonfigurowani dostawcy: '+providers.map(id=>labels[id]).filter(Boolean).join(', ')+'.':'Połączono z Workerem. Dodaj klucz API wybranego dostawcy w Cloudflare.');
+   status(form,providers.length?'Połączono. Dostępni dostawcy: '+providers.map(id=>labels[id]).filter(Boolean).join(', ')+'.':'Połączono z Workerem. Dodaj klucz API wybranego dostawcy w Cloudflare.',target);
    return;
   }
   if(action==='generate'){
@@ -144,6 +155,6 @@ document.addEventListener('click',async event=>{
    draftPreview(form,draft,config.provider);
    localStorage.setItem(key,JSON.stringify(config));
   }
- }catch(error){status(form,error.message || 'Generator jest chwilowo niedostępny.');}
- finally{instance.busy=false;button.disabled=false;}
+ }catch(error){status(form,error.message || 'Generator jest chwilowo niedostępny.',target);}
+ finally{if(ownsRequest){instance.busy=false;button.disabled=false;}}
 });
