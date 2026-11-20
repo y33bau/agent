@@ -51,10 +51,10 @@ function profile(){const b=C.balance(state),l=C.levelInfo(b.xp);return '<section
 function kpis(){
  const stats=C.totals(state,today()),week=C.totals(state,C.offsetDay(today(),-6),today());
  return '<div class="kpi-grid">'+[
- ['Telefony dzisiaj',stats.calls,'Cel: '+state.settings.calls+' / dzień','phone',false],
- ['Rozmowy dzisiaj',stats.conversations,'Z odebranym telefonem','users',false],
- ['Spotkania / 7 dni',week.meetings,'Każda relacja ma swój początek','calendar',false],
- ['Umowy / 7 dni',week.mandates,'Pozyskania zapisane przez Ciebie','key',true]
+ ['Telefony',stats.calls,'Dzisiaj · cel '+state.settings.calls,'phone',false],
+ ['Rozmowy',stats.conversations,'Dzisiaj','users',false],
+ ['Spotkania',week.meetings,'Ostatnie 7 dni','calendar',false],
+ ['Umowy',week.mandates,'Ostatnie 7 dni','key',true]
  ].map(([name,value,sub,i,highlight])=>'<div class="kpi '+(highlight?'highlight':'')+'"><div class="kpi-head"><span>'+name+'</span>'+icon(i)+'</div><strong>'+value+'</strong><small>'+sub+'</small></div>').join('')+'</div>';
 }
 function coach(){const d=C.totals(state,today()),hour=new Date().getHours();if(hour<8||hour>=19)return 'Na dziś wystarczy? Zapisz następny krok na jutro. Rano masz działać, a nie zgadywać, od czego zacząć.';if(d.calls===0)return state.settings.bold?'Panel nie wykona za Ciebie telefonu. Wybierz jeden kontakt. Numer, oddech, pierwszy ruch.':'Zacznij od jednego telefonu. Tylko jedna rozmowa na początek.';if(d.calls<state.settings.calls)return 'Masz już '+d.calls+' telefonów. Jeszcze '+(state.settings.calls-d.calls)+' do celu. Jeden numer naraz.';return 'Plan telefonów dowieziony. Teraz dopilnuj follow-upów — dobra rozmowa zasługuje na następny krok.';}
@@ -121,32 +121,37 @@ function drawMove(){
 }
 function dashboardView(){
  const due=C.dueLeads(state);
- return heading('Pulpit','',null)+(notice?'<div class="notice">'+esc(notice)+'</div>':'')+
-  '<div class="dashboard"><div class="dashboard-main">'+
-  '<section class="panel dashboard-weather" id="dashboard-weather" aria-label="Data i pogoda"></section>'+
-  '<div class="dashboard-actions" aria-label="Szybkie działania">'+
-  '<button class="btn gold" data-action="draw-move">✦ Wylosuj działanie</button>'+
+ return (notice?'<div class="notice">'+esc(notice)+'</div>':'')+
+  '<section class="office-intro"><div class="office-intro-content"><p class="office-agency">'+esc(state.settings.agency)+'</p>'+
+  '<h1>Pulpit agenta</h1><p class="subtitle">Klienci, nieruchomości i oferty w jednym miejscu.</p>'+
+  '<div class="row wrap office-intro-actions"><button class="btn gold" data-tab="pipeline">'+icon('users')+'Otwórz CRM</button>'+
+  '<button class="btn ghost" data-action="crm-offer-pick">'+icon('plus')+'Nowa oferta</button></div>'+
+  '</div></section>'+
+  '<section class="office-metrics" aria-labelledby="office-metrics-title"><h2 id="office-metrics-title">Aktywność biura</h2>'+kpis()+'</section>'+
+  '<div class="office-grid"><div class="office-column">'+
+  '<section class="panel office-followups"><div class="section-head"><h2>Do oddzwonienia</h2></div><div class="next-list">'+
+  (due.length?due.slice(0,4).map(nextRow).join(''):empty('Brak zaplanowanych telefonów.','Zaplanuj oddzwonienie w karcie klienta.','lead-add','Dodaj kontakt','phone'))+
+  '</div></section>'+
+  '<section class="panel office-shortcuts"><h2>Szybkie działania</h2><div class="dashboard-actions">'+
   '<button class="btn ghost" data-action="log-call">'+icon('phone')+'Zapisz telefon</button>'+
+  '<button class="btn ghost" data-action="draw-move">'+icon('spark')+'Wylosuj działanie</button>'+
   '<button class="btn ghost" data-action="focus">'+icon('clock')+'Blok akwizycji</button>'+
-  '<button class="btn ghost" data-action="log">Inne działanie</button></div>'+
-  kpis()+'<section class="panel"><div class="section-head"><h2>Do oddzwonienia</h2>'+
-  '<button class="btn text" data-tab="pipeline">Otwórz CRM ↗</button></div><div class="next-list">'+
-  (due.length?due.slice(0,4).map(nextRow).join(''):empty('Brak telefonów na dziś.','Dodaj kontakt lub zaplanuj oddzwonienie w CRM.','lead-add','Dodaj kontakt','users'))+
-  '</div></section></div><div class="stack">'+profile()+'</div></div>';
+  '<button class="btn ghost" data-action="log">'+icon('plus')+'Inne działanie</button></div></section></div>'+
+  '<aside class="office-column" aria-label="Pogoda i postęp"><section class="panel dashboard-weather" id="dashboard-weather" aria-label="Data i pogoda"></section>'+profile()+'</aside></div>';
 }
 function leadCard(lead){
  const id=esc(lead.id);
  const stage=C.STAGES.find(([key])=>key===lead.stage)[1];
  const role=C.CASE_ROLES[lead.role];
  return '<article class="panel lead-card"><div class="section-head"><span class="stage-badge">'+(role?role+' · ':'')+stage+'</span>'+datePill(lead.nextDate)+'</div>'+
-  '<h3>'+esc(lead.name)+'</h3><p class="lead-property">'+esc(lead.property)+' · '+esc(lead.area)+'</p>'+
+  '<h3>'+esc(lead.name)+'</h3><p class="lead-property">'+[lead.property,lead.area].filter(Boolean).map(esc).join(' · ')+'</p>'+
   '<div class="next-action"><small>NASTĘPNY KROK</small>'+esc(lead.nextAction||'Ustal kolejny krok')+'</div>'+
   '<div class="crm-card-actions"><button class="btn gold" data-action="client-card" data-id="'+id+'">Otwórz kartę</button>'+
   '<button class="btn ghost" data-action="log-lead" data-id="'+id+'">Zapisz telefon</button></div></article>';
 }
 let crmView='leads',offerFilter='all',offerSearch='';
 function pipelineView(){
- if(crmView==='offers')return heading('CRM','','crm-offer-pick','Nowa oferta')+crmTabs(crmView)+offersView(state,offerFilter,offerSearch);
+ if(crmView==='offers')return heading('Oferty nieruchomości','Szkice, opisy i oferty przypisane do klientów.','crm-offer-pick','Nowa oferta')+crmTabs(crmView)+offersView(state,offerFilter,offerSearch);
  const counts=C.STAGES.filter(x=>x[0]!=='lost').map(([id,title])=>'<button class="stage-count filter '+(leadFilter==='stage:'+id?'active':'')+'" data-lead-filter="stage:'+id+'"><strong>'+state.leads.filter(l=>!l.archived&&l.stage===id).length+'</strong>'+title+'</button>').join('');
  let leads=state.leads.filter(l=>leadFilter==='archive'?l.archived:!l.archived);
  if(leadFilter==='active')leads=leads.filter(l=>!['won','lost'].includes(l.stage));
@@ -162,7 +167,7 @@ function pipelineView(){
  const filters=[['active','W toku'],['late','Zaległe'],['today','Dzisiaj'],['later','Nadchodzące']];
  const extraFilters=[['all','Wszystkie'],['won','Zamknięte'],['archive','Archiwum']];
  const filterButton=([id,label])=>'<button class="filter '+(leadFilter===id?'active':'')+'" aria-pressed="'+(leadFilter===id)+'" data-lead-filter="'+id+'">'+label+'</button>';
- return heading('CRM','', 'lead-add','Dodaj lead')+crmTabs(crmView)+
+ return heading('Klienci i leady','Zarządzaj sprawami, etapami i terminami kontaktu.', 'lead-add','Dodaj lead')+crmTabs(crmView)+
   '<div class="crm-toolbar"><input class="search" aria-label="Szukaj kontaktu" placeholder="Nazwisko, telefon, e-mail lub rejon" value="'+esc(search)+'">'+
   '<div class="crm-quick">'+filters.map(filterButton).join('')+'</div>'+
   '<details '+(leadFilter.startsWith('stage:')||leadFilter.startsWith('role:')||extraFilters.some(([id])=>id===leadFilter)?'open':'')+'><summary>Więcej filtrów i etapy</summary>'+

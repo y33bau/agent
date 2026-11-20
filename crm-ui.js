@@ -25,8 +25,11 @@ export function crmTabs(current){
   .map(([id,label])=>'<button class="filter '+(id===current?'active':'')+'" aria-pressed="'+(id===current)+'" data-action="crm-view" data-id="'+id+'">'+label+'</button>').join('')+'</div>';
 }
 function offerRow(offer, customer=''){
- return item('<div class="section-head"><strong>'+e(offer.title)+'</strong><span class="stage-badge">'+OFFER_STATUS[offer.status]+'</span></div>'+
-  line(summary(offer))+line(customer)+btn('crm-offer-preview',offer.id,'Otwórz ofertę','gold'));
+ const details=[TRANSACTION[offer.transaction],offer.property,offer.location,offer.area && offer.area+' m²'].filter(Boolean);
+ return '<article class="crm-entry offer-card"><div class="section-head"><h3>'+e(offer.title)+'</h3><span class="stage-badge">'+OFFER_STATUS[offer.status]+'</span></div>'+
+  '<p class="offer-facts">'+details.map(e).join(' · ')+'</p>'+
+  (customer?'<p class="offer-client">Klient: '+e(customer)+'</p>':'')+
+  '<div class="offer-card-footer">'+(offer.price!==null?'<strong>'+price(offer.price)+'</strong>':'')+btn('crm-offer-preview',offer.id,'Otwórz ofertę','ghost')+'</div></article>';
 }
 export function offersView(state, filter, query){
  const {offers} = crmData(state);
@@ -36,7 +39,9 @@ export function offersView(state, filter, query){
   .sort((a,b)=>b.updatedAt-a.updatedAt);
  return '<div class="crm-toolbar"><input class="search" aria-label="Szukaj oferty" placeholder="Tytuł, miejscowość lub klient" value="'+e(query)+'">'+
  select('offer-status-filter','Status',filter,{all:'Wszystkie',...OFFER_STATUS})+'</div>'+
- '<div class="crm-stack">'+(matches.map(offer=>offerRow(offer,customer(offer))).join('')||blank('Brak ofert w tym widoku.'))+'</div>';
+ (matches.length?'<div class="offer-grid">'+matches.map(offer=>offerRow(offer,customer(offer))).join('')+'</div>':
+  '<section class="panel offer-empty"><h2>'+(offers.length?'Brak pasujących ofert':'Brak zapisanych ofert')+'</h2>'+
+  (offers.length?blank('Zmień status lub wpisz inną frazę.'):blank('Kliknij „Nowa oferta”, aby powiązać ogłoszenie ze sprawą klienta.'))+'</section>');
 }
 export function clientSections(state, lead, timeline, view, overview){
  const crm = crmData(state), clientId = lead.clientId || lead.id;

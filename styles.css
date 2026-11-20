@@ -147,3 +147,88 @@ dialog{background:#172e42;border-color:#dfc58a59}
 .crm-ai > button { margin-top:12px; }
 .crm-ai [data-ai-status]:empty, .crm-ai [data-ai-connect-status]:empty { display:none; }
 .crm-ai [data-ai-result][hidden], .crm-ai [data-ai-copy-fallback][hidden] { display:none; }
+
+/* ATRIA dashboard and CRM */
+.sidebar{background:#0d1d2bec}
+.brand-mark{width:43px;height:47px;font-size:29px;flex:none}
+.brand small{font-size:9px;margin-top:4px;letter-spacing:.12em}
+.nav-item{font-size:13px}
+.sidebar-bottom .settings-link{font-size:12px}
+.office-intro{
+ position:relative;isolation:isolate;overflow:hidden;
+ border:1px solid #afcfe638;border-radius:26px;
+ background:#142a3d;
+ box-shadow:0 14px 32px #07152245;
+}
+.office-intro::before{
+ content:"";position:absolute;inset:0 0 0 36%;z-index:-1;
+ background:linear-gradient(90deg,#142a3d 0%,#142a3d45 60%,#142a3d33),
+            url("./assets/atria-architecture.webp") center 55% / cover;
+}
+.office-intro-content{padding:clamp(22px,4vw,43px);max-width:615px}
+.office-agency{
+ margin-bottom:10px;color:var(--gold);font-size:11px;font-weight:700;
+ letter-spacing:.18em;text-transform:uppercase;overflow-wrap:anywhere;
+}
+.office-intro h1{
+ font:400 clamp(38px,5.2vw,69px)/1.02 Georgia,"Times New Roman",serif;
+ letter-spacing:-.045em;
+}
+.office-intro .subtitle{font-size:14px;color:#d9e6ee;max-width:34ch}
+.office-intro-actions{margin-top:22px;gap:8px}
+.office-intro-actions .btn{font-size:13px;min-height:46px}
+.office-intro-actions .ghost{background:#102234;color:var(--cream);border-color:#bfd2df60}
+.office-metrics{margin:24px 0 20px}
+.office-metrics h2,.office-shortcuts h2{margin-bottom:11px}
+.office-metrics .kpi-grid{margin:0;gap:10px}
+.office-metrics .kpi{
+ border-radius:16px;padding:14px 15px;background:#182e41;border:1px solid var(--line);
+}
+.office-metrics .kpi.highlight{background:#d6b77612;border-color:#dfc58a48}
+.office-metrics .kpi strong{font-size:32px;margin-top:4px;line-height:1.05}
+.office-metrics .kpi-head{font-size:13px}
+.office-metrics .kpi small{font-size:11px}
+.office-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(250px,1fr);gap:14px}
+.office-column{display:grid;gap:14px;align-content:start;min-width:0}
+.office-grid .panel{border-radius:18px}
+.office-followups .empty{padding:22px 8px}
+.office-shortcuts .btn{justify-content:flex-start;color:var(--cream);font-size:12px;padding-inline:11px}
+.office-shortcuts .btn .icon{color:var(--gold)}
+.crm-tabs{
+ background:#0f2232;border:1px solid var(--line);border-radius:14px;
+ padding:4px;gap:4px;max-width:550px;
+}
+.crm-tabs .filter{background:transparent;border:1px solid transparent;border-radius:10px;font-size:13px}
+.crm-tabs .filter.active{background:#233d51;border-color:#afcfe638;color:var(--cream)}
+.crm-toolbar .search{max-width:none}
+.crm-toolbar:has([name="offer-status-filter"]){grid-template-columns:minmax(0,1fr) minmax(160px,220px);align-items:end}
+.crm-toolbar:has([name="offer-status-filter"]) .field{margin:0}
+.offer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.offer-card{display:flex;flex-direction:column;gap:9px;padding:18px;background:#172d40}
+.offer-card h3{font-size:19px;font-weight:600;line-height:1.2}
+.offer-facts{font-size:13px;color:#d9e6ee}
+.offer-client{font-size:12px;color:var(--muted)}
+.offer-card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:9px;border-top:1px solid var(--line)}
+.offer-card-footer strong{color:var(--gold);font-size:17px}
+.offer-card-footer .btn{margin-top:0;margin-left:auto}
+.offer-empty{padding:26px}
+#modal:has(#crm-record-form,.client-tabs){max-width:690px}
+.crm-ai{background:#102539;border-color:#afcfe640;padding:15px}
+.crm-ai>summary{color:var(--gold);padding-block:5px}
+.crm-ai [data-ai-result]{background:#1b3449;margin-top:10px}
+@media(max-width:760px){
+ .nav-item{font-size:10px}
+ .office-grid,.offer-grid{grid-template-columns:minmax(0,1fr)}
+ .office-intro::before{inset:0;background:
+  linear-gradient(90deg,#102334fa 0%,#142a3deb 29%,#142a3d47 100%),
+  url("./assets/atria-architecture.webp") 62% 53% / cover}
+ .office-intro-actions .btn{padding-inline:11px}
+}
+@media(min-width:651px) and (max-width:760px){
+ .office-metrics .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:480px){
+ .crm-toolbar:has([name="offer-status-filter"]){grid-template-columns:minmax(0,1fr)}
+ .field input,.field select,.field textarea{font-size:16px}
+ .office-intro .subtitle{max-width:25ch}
+}
