@@ -3,7 +3,8 @@ const defaultWorker='https://atria-offer-ai.ad-szelag.workers.dev';
 const labels={openai:'OpenAI',anthropic:'Claude',gemini:'Gemini'};
 const errors={
  unauthorized:'Kod dostępu do generatora jest nieprawidłowy.',
- worker_setup:'Na Workerze brakuje kodu dostępu ATRIA_AI_TOKEN.',
+ worker_setup:'Na Workerze brakuje poprawnego kodu ATRIA_AI_TOKEN. Ustaw od 10 do 128 znaków.',
+ auth_limit:'Za dużo prób połączenia. Odczekaj minutę i spróbuj ponownie.',
  provider_setup:'Ten dostawca nie ma klucza API w Cloudflare.',
  provider_config:'Dostawca odrzucił klucz lub wybrany model. Sprawdź konfigurację.',
  provider_limit:'Dostawca zgłosił limit użycia lub brak środków.',
@@ -27,7 +28,7 @@ function configFrom(form){
   throw Error('Wklej adres Workera w domenie workers.dev, bez dodatkowej ścieżki.');
  }
  const token=find(form,'token').value.trim();
- if(!/^[a-zA-Z0-9_-]{32,128}$/.test(token)) throw Error('Kod dostępu musi mieć od 32 do 128 znaków. Użyj liter, cyfr, myślników lub podkreśleń.');
+ if(!/^[a-zA-Z0-9_-]{10,128}$/.test(token)) throw Error('Kod dostępu musi mieć od 10 do 128 znaków. Użyj liter, cyfr, myślników lub podkreśleń.');
  return {url:url.origin,token,provider:find(form,'provider').value};
 }
 function status(form,message,target='status'){find(form,target).textContent=message;}

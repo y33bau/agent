@@ -15,7 +15,7 @@ npx wrangler secret put ANTHROPIC_API_KEY
 npx wrangler secret put GEMINI_API_KEY
 ```
 
-Ustaw tylko klucze dostawców, z których chcesz korzystać. Kod ATRIA_AI_TOKEN to osobny losowy kod dostępu do generatora, od 32 do 128 znaków (litery, cyfry, myślnik lub podkreślenie). Ustaw go w Cloudflare i wpisz ten sam kod na swoich urządzeniach. Klucze dostawców wpisuj wyłącznie jako sekrety w Cloudflare. Zmiana kodu w Cloudflare odłącza urządzenia używające dawnego kodu.
+Ustaw tylko klucze dostawców, z których chcesz korzystać. Kod ATRIA_AI_TOKEN to osobny kod dostępu do generatora, od 10 do 128 znaków (litery, cyfry, myślnik lub podkreślenie). Ustaw go w Cloudflare i wpisz ten sam kod na swoich urządzeniach. Klucze dostawców wpisuj wyłącznie jako sekrety w Cloudflare. Zmiana kodu w Cloudflare odłącza urządzenia używające dawnego kodu.
 
 Adres HTTPS Workera z polecenia deploy wklej w Agencie ATRIA w CRM → Oferty → edycja oferty → Stwórz ofertę z AI → Połączenie z generatorem. Wpisz kod i kliknij Połącz. Kod dostępu do generatora jest zapisywany w przeglądarce na tym urządzeniu. Kliknięcie Usuń połączenie usuwa lokalny zapis.
 

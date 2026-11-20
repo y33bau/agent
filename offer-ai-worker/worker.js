@@ -1,4 +1,5 @@
 const MAX_REQUEST_BYTES = 8192;
+const ACCESS_CODE_PATTERN = /^[a-zA-Z0-9_-]{10,128}$/;
 const defaults = {
  openai: 'gpt-4.1-mini',
  anthropic: 'claude-haiku-4-5',
@@ -44,9 +45,8 @@ function response(origin, status, body){
  return body===null ? new Response(null,{status,headers}) : Response.json(body,{status,headers});
 }
 async function authorized(request, secret){
- if(typeof secret!=='string' || secret.length<32) return false;
  const header=request.headers.get('Authorization') || '';
- if(!header.startsWith('Bearer ') || header.length>512) return false;
+ if(!header.startsWith('Bearer ') || !ACCESS_CODE_PATTERN.test(header.slice(7))) return false;
  const encoder=new TextEncoder();
  const [sent,expected]=await Promise.all([header.slice(7),secret].map(value=>
   crypto.subtle.digest('SHA-256',encoder.encode(value))));
@@ -125,8 +125,12 @@ export default {
   const path=new URL(request.url).pathname;
   if(!['/v1/providers','/v1/offers'].includes(path)) return response(origin,404,{error:'not_found'});
   if(request.method==='OPTIONS') return response(origin,204,null);
-  if(!env.ATRIA_AI_TOKEN || env.ATRIA_AI_TOKEN.length<32) return response(origin,503,{error:'worker_setup'});
-  if(!await authorized(request,env.ATRIA_AI_TOKEN)) return response(origin,401,{error:'unauthorized'});
+  const secret=env.ATRIA_AI_TOKEN;
+  if(typeof secret!=='string' || !ACCESS_CODE_PATTERN.test(secret)) return response(origin,503,{error:'worker_setup'});
+  const ip=request.headers.get('CF-Connecting-IP') || 'unknown';
+  const authorizationLimit=await env.AUTH_RATE_LIMIT.limit({key:ip});
+  if(!authorizationLimit.success) return response(origin,429,{error:'auth_limit'});
+  if(!await authorized(request,secret)) return response(origin,401,{error:'unauthorized'});
   if(path==='/v1/providers' && request.method==='GET'){
    const providers=Object.keys(defaults).filter(provider=>modelConfig(env,provider).key);
    return response(origin,200,{providers});

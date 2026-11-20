@@ -8,5 +8,9 @@
   "name": "OFFER_RATE_LIMIT",
   "namespace_id": "1012",
   "simple": {"limit": 12, "period": 60}
+ }, {
+  "name": "AUTH_RATE_LIMIT",
+  "namespace_id": "1013",
+  "simple": {"limit": 20, "period": 60}
  }]
 }
