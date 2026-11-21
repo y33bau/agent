@@ -2,6 +2,8 @@ import * as C from './core.js';
 import {crmData} from './crm-core.js';
 import {clientSections, crmTabs, offersView} from './crm-ui.js';
 import {createCrmActions} from './crm-actions.js';
+import {calendarView, callButton, clientTab, clientTabs, contactBar, reportsView, templatesView, timelineExtras, todaySections} from './office-ui.js';
+import {createOfficeActions} from './office-actions.js';
 const KEY='agent_empire_v2',$=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const paths={
  grid:'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
@@ -21,7 +23,7 @@ const paths={
  document:'M5 2h10l4 4v16H5zm10 0v5h4M8 12h8m-8 4h6',plus:'M12 5v14M5 12h14',clock:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0M12 7v5l3 2',check:'m5 12 4 4L19 6',coin:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0m-9-5v10m3-8h-4a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H8'
 };
 function icon(name){return '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="'+(paths[name]||paths.spark)+'"/></svg>';}
-let state,tab='dashboard',leadFilter='active',taskFilter='active',search='',notice='',loadFailed=false,saveFailed=false,toastTimer,lastTrigger,ringed=null,pendingImport=null,installPrompt=null;
+let state,tab='today',calOffset=0,reportPeriod='month',leadFilter='active',taskFilter='active',search='',notice='',loadFailed=false,saveFailed=false,toastTimer,lastTrigger,ringed=null,pendingImport=null,installPrompt=null;
 try{
  const raw=localStorage.getItem(KEY);
  if(raw)state=C.validate(JSON.parse(raw));else{
@@ -36,6 +38,7 @@ function save(){if(loadFailed)return false;try{const raw=JSON.stringify(state);i
 function toast(text){$('#toast').textContent=text;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),4500);}
 function act(fn){try{fn();}catch(e){toast(e.message||'Nie udało się wykonać działania.');}}
 function celebrate(earned){
+ if(office()){toast('Zapisano w historii.');return;}
  if(state.settings.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const root=$('#confetti');root.replaceChildren();for(let i=0;i<18;i++){const p=document.createElement('i');p.className='confetti';p.style.cssText='--dx:'+(Math.random()-.5)*400+'px;--dy:'+(Math.random()-.5)*330+'px;--r:'+Math.random()*600+'deg;background:'+['#d9bd79','#b8cfa7','#eee9d4'][i%3];root.append(p);}setTimeout(()=>root.replaceChildren(),900);}
  if(state.settings.sound)try{const A=window.AudioContext||window.webkitAudioContext,ctx=new A();[440,554,659].forEach((hz,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=hz;g.gain.setValueAtTime(.04,ctx.currentTime+i*.09);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.09+.2);o.start(ctx.currentTime+i*.09);o.stop(ctx.currentTime+i*.09+.22);});setTimeout(()=>ctx.close(),1200);}catch{}
  toast(earned?'Ruch wykonany. +'+earned.xp+' XP · +'+earned.coins+' żetonów':'Twoje imperium rośnie.');
@@ -154,7 +157,7 @@ function leadCard(lead){
   '<h3>'+esc(lead.name)+'</h3><p class="record-facts">'+[lead.property,lead.area].filter(Boolean).map(esc).join(' · ')+'</p>'+
   '<div class="next-action"><small>NASTĘPNY KROK</small>'+esc(lead.nextAction||'Ustal kolejny krok')+'</div>'+
   '<div class="crm-card-actions record-footer"><button class="btn ghost" data-action="client-card" data-id="'+id+'">Otwórz kartę</button>'+
-  '<button class="btn ghost" data-action="log-lead" data-id="'+id+'">Zapisz telefon</button></div></article>';
+  ''+callButton(lead)+'<button class="btn ghost" data-action="log-lead" data-id="'+id+'">Zapisz wynik</button></div></article>';
 }
 let crmView='leads',offerFilter='all',offerSearch='';
 function pipelineView(){
@@ -209,9 +212,9 @@ function moreView(){
  return heading('Więcej','Narzędzia biura i ustawienia.')+
  '<div class="office-menu-grid" aria-label="Narzędzia biura">'+tabs.slice(5).map(([id,title,symbol])=>
   '<button class="office-menu-tile" data-tab="'+id+'">'+icon(symbol)+'<span>'+title+'</span></button>').join('')+
-  '<button class="office-menu-tile" data-action="settings">'+icon('settings')+'<span>Ustawienia</span></button></div>'+
- (storageStatus?'<p class="notice">'+storageStatus+'</p>':'')+'<div class="office-more-grid">'+profile()+challengesPanel()+
- '<section class="panel money-panel"><div class="section-head"><h2>Prowizje miesiąca</h2>'+icon('chart')+'</div><div class="money-number">'+money(stats.commissionGrosz)+'</div><p class="money-caption">Rzeczywiste kwoty wpisane przy zamkniętych transakcjach. Żetony gry nie są pieniędzmi.</p><div class="target-line"><span>Twój cel: '+money(state.settings.monthlyGoal*100)+'</span><span>'+Math.round(p)+'%</span></div><div class="track"><div class="fill" style="width:'+p+'%"></div></div><button class="btn text" data-action="log-sale" style="margin-top:12px">Zapisz transakcję ↗</button></section>'+'</div>';
+  '<button class="office-menu-tile" data-action="office-import">'+icon('plus')+'<span>Import leadów</span></button><button class="office-menu-tile" data-action="settings">'+icon('settings')+'<span>Ustawienia</span></button></div>'+
+ (storageStatus?'<p class="notice">'+storageStatus+'</p>':'')+'<div class="office-more-grid">'+(office()?'':profile()+challengesPanel())+
+ '<section class="panel money-panel"><div class="section-head"><h2>Prowizje miesiąca</h2>'+icon('chart')+'</div><div class="money-number">'+money(stats.commissionGrosz)+'</div><p class="money-caption">Rzeczywiste kwoty wpisane przy zamkniętych transakcjach.'+(office()?'':' Żetony gry nie są pieniędzmi.')+'</p><div class="target-line"><span>Twój cel: '+money(state.settings.monthlyGoal*100)+'</span><span>'+Math.round(p)+'%</span></div><div class="track"><div class="fill" style="width:'+p+'%"></div></div><button class="btn text" data-action="log-sale" style="margin-top:12px">Zapisz transakcję ↗</button></section>'+'</div>';
 }
 function caseSummary(lead){
  const seeker=['buyer','tenant'].includes(lead.role);
@@ -240,14 +243,36 @@ function clientCard(id,view='overview'){
  const history=state.activities.filter(item=>ids.has(item.leadId)&&!item.voided).map(item=>({time:item.time,html:'<article class="crm-entry"><strong>'+esc(C.TYPES[item.type].label)+'</strong><small>'+esc(item.day)+' · '+esc(({reached:'Rozmowa',noanswer:'Brak odpowiedzi',declined:'Odmowa',done:'Zapisano'})[item.outcome])+'</small>'+(item.note?'<p class="crm-copy">'+esc(item.note)+'</p>':'')+'</article>'}));
  const overview='<div class="row wrap crm-case-actions"><button class="btn" data-action="lead-edit" data-id="'+esc(id)+'">Edytuj sprawę</button><button class="btn" data-action="case-add" data-id="'+esc(id)+'">Dodaj sprawę</button><button class="btn" data-action="log-lead" data-id="'+esc(id)+'">Zapisz kontakt</button></div><h3>Sprawy i nieruchomości</h3>'+cases.map(item=>'<section class="panel"><button class="btn text" data-action="client-card" data-id="'+esc(item.id)+'">'+esc(item.property+' · '+item.area)+'</button>'+caseSummary(item)+'<p>'+esc(C.STAGES.find(([stage])=>stage===item.stage)[1])+' · '+esc(item.nextDate)+' · '+esc(item.nextAction)+'</p><p>'+esc(item.notes)+'</p></section>').join('')+matchingPanel;
  const client=state.leads.find(item=>item.id===clientId)||lead;
- modal(client.name,clientSections(state,lead,history,view,overview));
+ const profileEntry=crmData(state).profiles.find(entry=>entry.clientId===clientId);
+ const fullHistory=history.concat(timelineExtras(state,lead));
+ modal(client.name,contactBar(client,profileEntry)+clientSections(state,lead,fullHistory,view,overview,{tabs:clientTabs(lead),render:section=>clientTab(state,lead,section)}));
 }
-const tabs=[['dashboard','Pulpit','grid'],['pipeline','CRM','users'],['field','Teren','phone'],['portals','Portale','building'],['more','Więcej','grid'],['missions','Misje','target'],['empire','Imperium','building'],['rewards','Nagrody','gift'],['progress','Postęp','chart']];
+const GAME_TABS=[['dashboard','Pulpit','grid'],['pipeline','CRM','users'],['field','Teren','phone'],['portals','Portale','building'],['more','Więcej','grid'],['missions','Misje','target'],['empire','Imperium','building'],['rewards','Nagrody','gift'],['progress','Postęp','chart'],['calendar','Kalendarz','calendar'],['reports','Raporty','chart'],['templates','Szablony','document']];
+const OFFICE_TABS=[['today','Dziś','grid'],['pipeline','Klienci','users'],['offers','Oferty','home'],['calendar','Kalendarz','calendar'],['more','Więcej','settings'],['reports','Raporty','chart'],['templates','Szablony','document'],['portals','Portale','building']];
+let tabs=GAME_TABS;
+// Tryb biurowy (domyślny) chowa warstwę gry. Włączasz ją w ustawieniach.
+function office(){return !state.settings.game;}
+function resolveTab(id){
+ const list=office()?OFFICE_TABS:GAME_TABS;
+ if(list.some(([key])=>key===id))return id;
+ if(id==='offers'&&!office()){crmView='offers';return 'pipeline';}
+ return office()?'today':'dashboard';
+}
+function todayView(){
+ const day=today();
+ return (notice?'<div class="notice">'+esc(notice)+'</div>':'')+officeHeader('Dziś',esc(new Date(day+'T12:00:00').toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'})),
+  '<button class="btn gold" data-action="lead-add">'+icon('plus')+'Dodaj lead</button><button class="btn ghost" data-action="office-viewing-add">'+icon('calendar')+'Zaplanuj prezentację</button>',state.settings.agency)+todaySections(state,day);
+}
+function officeCalendarView(){return heading('Kalendarz','Kontakty, prezentacje i kończące się umowy.','office-viewing-add','Zaplanuj prezentację')+calendarView(state,today(),calOffset);}
+function officeReportsView(){return heading('Raporty','Lejek, źródła leadów, prezentacje i prowizje.')+reportsView(state,today(),reportPeriod);}
+function officeTemplatesView(){return heading('Szablony wiadomości','Gotowe teksty SMS i e-mail z danymi klienta.','office-template-add','Nowy szablon')+templatesView(state);}
 function render(){
+ tabs=office()?OFFICE_TABS:GAME_TABS;tab=resolveTab(tab);if(document.body.dataset)document.body.dataset.mode=office()?'office':'game';
+ if(tab==='offers')crmView='offers';else if(tab==='pipeline'&&office())crmView='leads';
  document.body.classList.toggle('calm',!state.settings.motion);
  $('#nav').innerHTML=tabs.slice(0,5).map(([id,title,i])=>'<button class="nav-item '+((id===tab||id==='more'&&tabs.slice(5).some(item=>item[0]===tab))?'active':'')+'" data-tab="'+id+'" '+((id===tab||id==='more'&&tabs.slice(5).some(item=>item[0]===tab))?'aria-current="page"':'')+'>'+icon(i)+'<span>'+title+'</span></button>').join('');
  $('#main').setAttribute?.('data-view',tab);
- $('#main').innerHTML=({field:()=>heading('Teren','Kontakty i notatki pod ręką.'),portals:()=>heading('Portale','Strona biura, Facebook i serwisy ogłoszeniowe.'),more:moreView,dashboard:dashboardView,pipeline:pipelineView,missions:missionsView,empire:empireView,rewards:rewardsView,progress:progressView}[tab])();
+ $('#main').innerHTML=({field:()=>heading('Teren','Kontakty i notatki pod ręką.'),portals:()=>heading('Portale','Strona biura, Facebook i serwisy ogłoszeniowe.'),more:moreView,dashboard:dashboardView,today:todayView,offers:pipelineView,calendar:officeCalendarView,reports:officeReportsView,templates:officeTemplatesView,pipeline:pipelineView,missions:missionsView,empire:empireView,rewards:rewardsView,progress:progressView}[tab])();
  state.lastVisit=today();save();renderFocus();
 }
 function modal(title,body){lastTrigger=document.activeElement;$('#modal-content').innerHTML='<div class="modal-head"><h2 id="modal-title">'+esc(title)+'</h2><button class="icon-btn" data-action="close" aria-label="Zamknij">×</button></div>'+body;if(!$('#modal').open)$('#modal').showModal();$('#modal').scrollTop=0;}
@@ -258,7 +283,7 @@ function leadForm(id,source){
  '<form id="lead-form" data-id="'+esc(id||'')+'" data-client="'+esc(source?.clientId||source?.id||'')+'"><label class="field">Nazwa lub pseudonim<input name="name" maxlength="100" required value="'+esc((l||source)?.name||'')+'" placeholder="Np. Właściciel · mieszkanie centrum" autofocus></label><div class="form-grid"><label class="field">Telefon (opcjonalnie)<input name="phone" type="tel" maxlength="40" value="'+esc((l||source)?.phone||'')+'"></label><label class="field">Rejon<input name="area" maxlength="100" value="'+esc(l?.area||'Łańcut')+'"></label></div><div class="form-grid"><label class="field">Nieruchomość<input name="property" maxlength="100" value="'+esc(l?.property||'Mieszkanie')+'"></label><label class="field">Etap<select name="stage">'+C.STAGES.map(([v,x])=>'<option value="'+v+'" '+(l?.stage===v?'selected':'')+'>'+x+'</option>').join('')+'</select></label></div><div class="form-grid"><label class="field">Następny kontakt<input name="nextDate" type="date" required value="'+esc(l?.nextDate||today())+'"></label><label class="field">Konkretny następny krok<input name="nextAction" maxlength="200" value="'+esc(l?.nextAction||'Wykonaj pierwszy telefon')+'"></label></div>'+caseDetailsForm(l)+'<label class="field">Notatka<textarea name="notes" maxlength="2000" placeholder="Co warto pamiętać przed rozmową?">'+esc(l?.notes||'')+'</textarea><small>Dane zapisują się na urządzeniu; po włączeniu synchronizacji trafiają też do szyfrowanej chmury. Zapis etapu nie nalicza punktów ani prowizji.</small></label><div class="form-actions">'+(l?'<button class="btn danger" type="button" data-action="lead-archive" data-id="'+esc(l.id)+'">'+(l.archived?'Przywróć':'Archiwizuj')+'</button>':'')+'<button class="btn gold" type="submit">Zapisz sprawę</button></div></form>');
 }
 function logForm(type=null,leadId=null){
- if(!type){modal('Jaki ruch wykonałeś?','<p class="subtitle">Punkty za rzeczywistą pracę. Prowizja dopiero po wpisaniu transakcji.</p><div class="choice-grid">'+Object.entries(C.TYPES).map(([id,t])=>'<button class="choice" data-action="log-type" data-id="'+id+'">'+icon(t.icon)+'<strong>'+t.label+'</strong><small>+'+t.xp+' XP · +'+t.coins+' żetonów</small></button>').join('')+'</div>');return;}
+ if(!type){modal('Jaki ruch wykonałeś?','<p class="subtitle">Punkty za rzeczywistą pracę. Prowizja dopiero po wpisaniu transakcji.</p><div class="choice-grid">'+Object.entries(C.TYPES).map(([id,t])=>'<button class="choice" data-action="log-type" data-id="'+id+'">'+icon(t.icon)+'<strong>'+t.label+'</strong>'+(office()?'':'<small>+'+t.xp+' XP · +'+t.coins+' żetonów</small>')+'</button>').join('')+'</div>');return;}
  const t=C.TYPES[type],lead=state.leads.find(l=>l.id===leadId);
  modal(type==='call'?'Zapisz wynik telefonu':t.label+' — dobry ruch.',
  '<form id="activity-form" data-type="'+type+'" data-token="'+C.uid()+'"><label class="field">Kontakt'+(type==='sale'?' (wymagany)':'')+'<select name="leadId" '+(type==='sale'?'required':'')+'><option value="">'+(type==='sale'?'Wybierz kontakt':'Bez przypisania — opiszę działanie')+'</option>'+state.leads.filter(l=>!l.archived).map(l=>'<option value="'+esc(l.id)+'" '+(leadId===l.id?'selected':'')+'>'+esc(l.name)+'</option>').join('')+'</select></label>'+
@@ -267,7 +292,7 @@ function logForm(type=null,leadId=null){
  '<label class="field">Krótki opis<input name="note" maxlength="300" placeholder="'+(lead?'Np. właściciel potwierdził termin':'Np. telefon w sprawie mieszkania w centrum')+'"><small>Wymagany, jeśli nie przypisujesz kontaktu.</small></label><label class="field">Data wykonania<input name="day" type="date" required max="'+today()+'" value="'+today()+'"></label>'+
  (type==='call'?'<div class="row wrap followup-shortcuts" aria-label="Szybki termin kontaktu"><button type="button" class="btn ghost" data-action="followup-date" data-id="1">Jutro</button><button type="button" class="btn ghost" data-action="followup-date" data-id="3">Za 3 dni</button><button type="button" class="btn ghost" data-action="followup-date">Wybierz datę</button></div>':'')+
  (type!=='sale'?'<div class="form-grid"><label class="field">Następny kontakt (opcjonalnie)<input name="nextDate" type="date" value="'+esc(lead?.nextDate||'')+'"></label><label class="field">Następny krok<input name="nextAction" maxlength="200" value="'+esc(lead?.nextAction||'')+'" placeholder="Np. wysłać propozycję spotkania"></label></div>':'')+
- '<div class="notice" style="margin-top:10px">+'+t.xp+' XP · +'+t.coins+' żetonów · +'+t.influence+' wpływu. Wynik telefonu nie odbiera Ci punktów za próbę.</div><div class="form-actions"><button class="btn" type="button" data-action="close">Anuluj</button><button class="btn gold" type="submit">Zapisz wykonane działanie</button></div></form>');
+ (office()?'':'<div class="notice" style="margin-top:10px">+'+t.xp+' XP · +'+t.coins+' żetonów · +'+t.influence+' wpływu. Wynik telefonu nie odbiera Ci punktów za próbę.</div>')+'<div class="form-actions"><button class="btn" type="button" data-action="close">Anuluj</button><button class="btn gold" type="submit">Zapisz wykonane działanie</button></div></form>');
 }
 function taskForm(id,template=null){
  const t=state.tasks.find(t=>t.id===id),locked=!!t?.records.length;
@@ -281,19 +306,27 @@ function rewardForm(id){
  '<form id="reward-form" data-id="'+esc(id||'')+'"><label class="field">Nagroda<input name="title" maxlength="160" required value="'+esc(r?.title||'')+'" placeholder="Np. wyjście na dobrą kolację" autofocus></label><label class="field">Koszt w żetonach<input name="cost" type="number" min="1" max="100000" step="1" required value="'+(r?.cost||150)+'"><small>Telefon daje 10 żetonów, spotkanie 40, pozyskanie umowy 90.</small></label><div class="form-actions">'+(r?'<button class="btn danger" type="button" data-action="reward-archive" data-id="'+esc(r.id)+'">Usuń z oferty</button>':'')+'<button class="btn gold" type="submit">Zapisz nagrodę</button></div></form>');
 }
 function settings(){
- modal('Twoje zasady gry.',
- '<form id="settings-form"><div class="form-grid"><label class="field">Imię<input name="name" maxlength="40" value="'+esc(state.settings.name)+'"></label><label class="field">Biuro<input name="agency" maxlength="50" value="'+esc(state.settings.agency)+'"></label></div><h3 style="margin-bottom:14px">Dzienny kontrakt</h3><div class="form-grid">'+[['calls','Telefony',100],['conversations','Rozmowy',100],['meetings','Spotkania',20]].map(([k,l,max])=>'<label class="field">'+l+'<input name="'+k+'" type="number" min="1" max="'+max+'" step="1" required value="'+state.settings[k]+'"></label>').join('')+'<label class="field">Cel prowizji / miesiąc (zł)<input name="monthlyGoal" type="number" min="1" max="10000000" step="1" required value="'+state.settings.monthlyGoal+'"></label></div>'+[['bold','Motywacja bez owijania'],['sound','Dźwięk po wykonaniu'],['motion','Delikatne animacje i celebracje']].map(([k,l])=>'<label class="setting-line">'+l+'<input name="'+k+'" type="checkbox" '+(state.settings[k]?'checked':'')+'></label>').join('')+'<div class="form-actions"><button class="btn gold" type="submit">Zapisz ustawienia</button></div></form><hr style="border:0;border-top:1px solid var(--line);margin:24px 0"><button class="btn ghost" data-action="notifications" style="width:100%;margin-bottom:20px">Powiadomienia i przypomnienia</button><h3>Kopia danych</h3><p class="subtitle">Kontakty i postęp są lokalne. Eksportuj kopię, zanim zmienisz urządzenie lub wyczyścisz przeglądarkę. Kopia zawiera dane CRM i linki do dokumentów. Załączone pliki pobierz osobno z kart klientów.</p><div class="row wrap" style="margin-top:14px"><button class="btn" data-action="export">↓ Pobierz kopię</button><button class="btn" data-action="import">↑ Wczytaj kopię</button>'+(loadFailed?'<button class="btn danger" data-action="raw-export">Pobierz oryginalny zapis</button>':'')+'</div><input id="import-file" type="file" accept=".json,application/json" hidden><p class="subtitle tiny">Instalacja na iPhonie: Safari → Udostępnij → Do ekranu początkowego. Offline działa po pierwszym pełnym otwarciu.</p>'+(installPrompt?'<button class="btn ghost" style="margin-top:12px" data-action="install">Zainstaluj aplikację</button>':'')+'<p class="subtitle tiny">Blok akwizycji nie blokuje innych aplikacji. Prowizje są Twoimi wpisami, bez integracji z bankiem lub CRM.</p>');
+ modal(office()?'Ustawienia biura':'Twoje zasady gry.',
+ '<form id="settings-form"><div class="form-grid"><label class="field">Imię<input name="name" maxlength="40" value="'+esc(state.settings.name)+'"></label><label class="field">Biuro<input name="agency" maxlength="50" value="'+esc(state.settings.agency)+'"></label></div><h3 style="margin-bottom:14px">Dzienny kontrakt</h3><div class="form-grid">'+[['calls','Telefony',100],['conversations','Rozmowy',100],['meetings','Spotkania',20]].map(([k,l,max])=>'<label class="field">'+l+'<input name="'+k+'" type="number" min="1" max="'+max+'" step="1" required value="'+state.settings[k]+'"></label>').join('')+'<label class="field">Cel prowizji / miesiąc (zł)<input name="monthlyGoal" type="number" min="1" max="10000000" step="1" required value="'+state.settings.monthlyGoal+'"></label></div>'+[['bold','Motywacja bez owijania'],['sound','Dźwięk po wykonaniu'],['motion','Delikatne animacje i celebracje'],['game','Tryb gry: XP, misje, nagrody i Imperium']].map(([k,l])=>'<label class="setting-line">'+l+'<input name="'+k+'" type="checkbox" '+(state.settings[k]?'checked':'')+'></label>').join('')+'<div class="form-actions"><button class="btn gold" type="submit">Zapisz ustawienia</button></div></form><hr style="border:0;border-top:1px solid var(--line);margin:24px 0"><button class="btn ghost" data-action="notifications" style="width:100%;margin-bottom:20px">Powiadomienia i przypomnienia</button><h3>Kopia danych</h3><p class="subtitle">Kontakty i postęp są lokalne. Eksportuj kopię, zanim zmienisz urządzenie lub wyczyścisz przeglądarkę. Kopia zawiera dane CRM i linki do dokumentów. Załączone pliki pobierz osobno z kart klientów.</p><div class="row wrap" style="margin-top:14px"><button class="btn" data-action="export">↓ Pobierz kopię</button><button class="btn" data-action="import">↑ Wczytaj kopię</button>'+(loadFailed?'<button class="btn danger" data-action="raw-export">Pobierz oryginalny zapis</button>':'')+'</div><input id="import-file" type="file" accept=".json,application/json" hidden><p class="subtitle tiny">Instalacja na iPhonie: Safari → Udostępnij → Do ekranu początkowego. Offline działa po pierwszym pełnym otwarciu.</p>'+(installPrompt?'<button class="btn ghost" style="margin-top:12px" data-action="install">Zainstaluj aplikację</button>':'')+'<p class="subtitle tiny">Blok akwizycji nie blokuje innych aplikacji. Prowizje są Twoimi wpisami, bez integracji z bankiem lub CRM.</p>');
 }
 function renderFocus(){
  const f=state.focus,bar=$('#focus-bar');bar.hidden=!f;if(!f)return;
  const left=C.remaining(f),seconds=Math.ceil(left/1000),text=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
- document.title=left===0?'Blok zakończony — AGENT EMPIRE':text+' — AGENT EMPIRE';
+ document.title=left===0?'Blok zakończony — ATRIA CRM':text+' — ATRIA CRM';
  const sig=[f.id,f.paused,left===0].join('|');if(bar.dataset.sig===sig&&bar.querySelector('.focus-time')){bar.querySelector('.focus-time').textContent=text;return;}bar.dataset.sig=sig;
  bar.innerHTML='<span class="focus-time" role="timer">'+text+'</span><div class="focus-caption"><strong>'+(left===0?'Blok zakończony.':'Blok akwizycji')+'</strong><small>'+(f.paused?'Pauza. Wracasz, kiedy chcesz.':'Jeden kontakt. Potem następny.')+'</small></div>'+(left===0?'<button class="btn small gold" data-action="focus-finish">Gotowe</button>':'<button class="btn small" data-action="focus-pause">'+(f.paused?'Wznów':'Pauza')+'</button>')+'<button class="icon-btn" data-action="focus-stop" aria-label="Zakończ blok">×</button>';
  if(left===0&&ringed!==f.id){ringed=f.id;toast('Blok skończony. Zapisz wykonane działania i zrób przerwę.');}
 }
 function download(raw,name){const url=URL.createObjectURL(new Blob([raw],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function rawBackup(){return localStorage.getItem(KEY)||JSON.stringify({realestate_agent:localStorage.getItem('realestate_agent'),realestate_quests:localStorage.getItem('realestate_quests')},null,2);}
+function commitState(update){
+ if(loadFailed)throw Error('Najpierw odzyskaj oryginalny zapis w ustawieniach.');
+ const previous=state,next=structuredClone(state);
+ update(next);C.validate(next);state=next;
+ if(!save()){state=previous;throw Error('Nie udało się zapisać danych.');}
+ render();
+}
+const officeActions=createOfficeActions({getState:()=>state,commit:commitState,modal,close,clientCard,toast,logForm});
 const crmActions=createCrmActions({getState:()=>state,uid:C.uid,modal,clientCard,toast,commit(update){
  const previous=state,next=structuredClone(state);
  update(next);C.validate(next);state=next;
@@ -307,8 +340,11 @@ document.addEventListener('click',e=>{
  if(button.dataset.leadFilter){leadFilter=button.dataset.leadFilter;render();return;}
  if(button.dataset.taskFilter){taskFilter=button.dataset.taskFilter;render();return;}
  const action=button.dataset.action,id=button.dataset.id;
- if(action==='crm-view'){crmView=id;render();document.querySelector('[data-action=crm-view][aria-pressed=true]')?.focus();return;}
+ if(action==='crm-view'){crmView=id;if(office())tab=id==='offers'?'offers':'pipeline';render();document.querySelector('[data-action=crm-view][aria-pressed=true]')?.focus();return;}
  if(action?.startsWith('crm-')){crmActions.onAction(action,id).catch(error=>toast(error.message));return;}
+if(action==='office-cal-shift'){calOffset=Number(id)||0;render();return;}
+if(action==='office-period'){reportPeriod=id;render();return;}
+if(action?.startsWith('office-')){Promise.resolve().then(()=>officeActions.onAction(action,id,button)).catch(error=>toast(error.message));return;}
  switch(action){
  case 'close':close();break;
  case 'draw-move':drawMove();break;
@@ -359,7 +395,7 @@ document.addEventListener('click',e=>{
  case 'focus-start':C.startFocus(state,Number(id));save();close();renderFocus();break;
  case 'focus-pause':C.pauseFocus(state);save();renderFocus();break;
  case 'focus-stop':modal('Zakończyć blok?','<p class="subtitle">Zapisane działania zostają. Nie ma kary za przerwę.</p><div class="form-actions"><button class="btn" data-action="close">Wracam do bloku</button><button class="btn ghost" data-action="focus-finish">Zakończ blok</button></div>');break;
- case 'focus-finish':state.focus=null;save();close();render();document.title='AGENT EMPIRE — Twój następny ruch';toast('Blok zakończony. Zapisz działania, których jeszcze nie dodałeś.');break;
+ case 'focus-finish':state.focus=null;save();close();render();document.title='ATRIA CRM · Biuro nieruchomości';toast('Blok zakończony. Zapisz działania, których jeszcze nie dodałeś.');break;
  case 'export':download(JSON.stringify(state,null,2),'agent-empire-'+today()+'.json');break;
  case 'raw-export':download(rawBackup(),'agent-empire-oryginalny-zapis.json');break;
  case 'import':$('#import-file').click();break;
@@ -370,11 +406,20 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{if(e.target.matches('.search')){if(crmView==='offers')offerSearch=e.target.value;else search=e.target.value;const value=e.target.selectionStart;render();const input=$('.search');input?.focus();input?.setSelectionRange(value,value);}});
 document.addEventListener('change',e=>{
+ try{if(officeActions.onChange(e.target))return;}catch(error){toast(error.message);if(e.target.type==='checkbox')e.target.checked=!e.target.checked;return;}
  if(e.target.name==='offer-status-filter'){offerFilter=e.target.value;render();document.querySelector('[name=offer-status-filter]')?.focus();}
  if(e.target.matches('[data-step]'))act(()=>{const reward=C.completeTask(state,e.target.dataset.task,today(),Date.now(),Number(e.target.dataset.step));if(reward){save();render();celebrate(reward);}});
  if(e.target.id==='import-file'){const file=e.target.files[0];if(!file)return;if(file.size>15000000){toast('Kopia jest za duża. Maksymalnie 15 MB.');return;}file.text().then(raw=>act(()=>{pendingImport=C.validate(JSON.parse(raw));modal('Wczytać tę kopię?','<p class="subtitle">Zastąpi aktualne dane: '+pendingImport.leads.length+' kontaktów i '+pendingImport.activities.length+' działań. Najpierw pobierzemy obecną kopię bezpieczeństwa.</p><div class="form-actions"><button class="btn" data-action="close">Anuluj</button><button class="btn gold" data-action="import-confirm">Wczytaj kopię</button></div>');})).catch(()=>toast('Nie udało się odczytać pliku.'));}
 });
 document.addEventListener('submit',e=>{
+ if(e.target.id?.startsWith('office-')&&e.target.id!=='office-compose-form'){
+  e.preventDefault();
+  if(e.target.dataset.saving)return;
+  e.target.dataset.saving='true';
+  officeActions.onSubmit(e.target).catch(error=>toast(error.message)).finally(()=>{delete e.target.dataset.saving;});
+  return;
+ }
+ if(e.target.id==='office-compose-form'){e.preventDefault();return;}
  if(['crm-record-form','crm-pick-form'].includes(e.target.id)){
   e.preventDefault();const submit=e.target.querySelector('[type=submit]');
   if(e.target.dataset.saving)return;
@@ -414,7 +459,7 @@ document.addEventListener('submit',e=>{
   const a=C.logActivity(state,{...values,id:form.dataset.token,type:form.dataset.type});if(a){save();close();render();celebrate(C.TYPES[a.type]);}}
  if(form.id==='task-form'){const old=state.tasks.find(t=>t.id===form.dataset.id),locked=!!old?.records.length,t=C.makeTask({...values,steps:locked?old.steps:String(values.steps||'').split('\n'),tier:locked?old.tier:values.tier,date:locked?old.date:values.date,repeat:locked?old.repeat:values.repeat});if(old)Object.assign(old,t,{id:old.id,records:old.records,archived:old.archived});else state.tasks.push(t);save();close();render();toast('Misja gotowa. Teraz pierwszy krok.');}
  if(form.id==='reward-form'){const title=String(values.title||'').trim().slice(0,160),cost=Number(values.cost);if(!title||!Number.isSafeInteger(cost)||cost<1||cost>100000)throw Error('Podaj nazwę i koszt od 1 do 100 000 żetonów.');const r=state.rewards.find(r=>r.id===form.dataset.id);if(r)Object.assign(r,{title,cost});else state.rewards.push({id:C.uid(),title,cost,archived:false});save();close();render();toast('Nagroda zapisana.');}
- if(form.id==='settings-form'){const next={name:String(values.name||'').trim().slice(0,40),agency:String(values.agency||'').trim().slice(0,50),calls:Number(values.calls),conversations:Number(values.conversations),meetings:Number(values.meetings),monthlyGoal:Number(values.monthlyGoal),bold:data.has('bold'),sound:data.has('sound'),motion:data.has('motion')};C.validate({...state,settings:next});state.settings=next;save();close();render();toast('Zasady zapisane. Gramy dalej.');}
+ if(form.id==='settings-form'){const next={name:String(values.name||'').trim().slice(0,40),agency:String(values.agency||'').trim().slice(0,50),calls:Number(values.calls),conversations:Number(values.conversations),meetings:Number(values.meetings),monthlyGoal:Number(values.monthlyGoal),bold:data.has('bold'),sound:data.has('sound'),motion:data.has('motion'),game:data.has('game')};C.validate({...state,settings:next});state.settings=next;save();close();render();toast(office()?'Ustawienia zapisane.':'Zasady zapisane. Gramy dalej.');}
  });
 });
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal')){const r=$('#modal').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)close();}});
@@ -424,7 +469,7 @@ window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue)act(()=>{state=
 let lastDay=today();setInterval(()=>{renderFocus();if(lastDay!==today()){lastDay=today();render();}},1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderFocus();if(lastDay!==today()){lastDay=today();render();}}});
 render();
-if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').then(reg=>{if(navigator.serviceWorker.controller)return;if(reg.active)toast('Twoje centrum dowodzenia jest gotowe offline.');else reg.addEventListener('updatefound',()=>reg.installing?.addEventListener('statechange',e=>{if(e.target.state==='activated')toast('Twoje centrum dowodzenia jest gotowe offline.');}));}).catch(()=>toast('Tryb offline chwilowo niedostępny. Zapis lokalny nadal działa.'));
+if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').then(reg=>{if(navigator.serviceWorker.controller)return;if(reg.active)toast('ATRIA CRM działa teraz także offline.');else reg.addEventListener('updatefound',()=>reg.installing?.addEventListener('statechange',e=>{if(e.target.state==='activated')toast('ATRIA CRM działa teraz także offline.');}));}).catch(()=>toast('Tryb offline chwilowo niedostępny. Zapis lokalny nadal działa.'));
 
 // Shared add-ons use the existing validator and persistence path.
 document.addEventListener('companion-state',e=>{const q=e.detail;if(q.action==='read'){q.result=structuredClone(state);return;}try{if(loadFailed)throw Error('Najpierw odzyskaj oryginalny zapis w ustawieniach.');const before=state,next=structuredClone(state);q.update(next);C.validate(next);state=next;if(!save()){state=before;throw Error('Nie udało się zapisać zmiany.');}render();q.result=true;}catch(err){q.error=err.message;}});

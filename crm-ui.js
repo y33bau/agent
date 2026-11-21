@@ -44,7 +44,7 @@ export function offersView(state, filter, query){
   '<section class="panel crm-empty"><h2>'+(offers.length?'Brak pasujących ofert':'Brak zapisanych ofert')+'</h2>'+
   (offers.length?blank('Zmień status lub wpisz inną frazę.'):blank('Kliknij „Nowa oferta”, aby powiązać ogłoszenie ze sprawą klienta.'))+'</section>');
 }
-export function clientSections(state, lead, timeline, view, overview){
+export function clientSections(state, lead, timeline, view, overview, extra = null){
  const crm = crmData(state), clientId = lead.clientId || lead.id;
  const profile = crm.profiles.find(entry=>entry.clientId===clientId);
  const client = state.leads.find(entry=>entry.id===clientId) || lead;
@@ -52,7 +52,8 @@ export function clientSections(state, lead, timeline, view, overview){
  const contact = [client.phone,profile?.email].filter(Boolean).join(' · ');
  const notes = linked('notes').map(note=>({time:note.createdAt, html:item('<strong>'+NOTE_TYPES[note.type]+'</strong><small>'+date(note.createdAt)+'</small>'+line(note.body)+btn('crm-note-edit',note.id,'Edytuj'))}));
  const history = [...notes,...timeline].sort((a,b)=>b.time-a.time);
- const tabs='<div class="crm-tabs client-tabs" role="group" aria-label="Karta klienta">'+[['overview','Profil'],['offers','Oferty'],['documents','Dokumenty'],['history','Historia']].map(([id,label])=>'<button class="filter '+(view===id?'active':'')+'" aria-pressed="'+(view===id)+'" data-action="client-view" data-id="'+e(lead.id)+'" data-section="'+id+'">'+label+'</button>').join('')+'</div>';
+ const tabs='<div class="crm-tabs client-tabs" role="group" aria-label="Karta klienta">'+[['overview','Profil'],['history','Historia'],['offers','Oferty'],['documents','Dokumenty'],...(extra?.tabs ?? [])].map(([id,label])=>'<button class="filter '+(view===id?'active':'')+'" aria-pressed="'+(view===id)+'" data-action="client-view" data-id="'+e(lead.id)+'" data-section="'+id+'">'+label+'</button>').join('')+'</div>';
+ if(extra?.tabs?.some(([id])=>id===view)) return tabs+extra.render(view);
  if(view==='overview') return tabs+section('Profil klienta',btn('crm-profile',lead.id,'Edytuj profil'),
   line(contact)+line(profile?.source && 'Źródło: '+profile.source)+line(profile?.summary)+(!contact&&!profile?.summary&&!profile?.source?blank('Uzupełnij dane i źródło kontaktu.') : ''))+overview;
  if(view==='offers') return tabs+section('Oferty',btn('crm-offer-add',lead.id,'Nowa oferta'),linked('offers').map(offer=>offerRow(offer)).join('')||blank('Brak zapisanych ofert.'));

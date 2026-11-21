@@ -9,4 +9,4 @@ test('dedupe prevents repeating same notification slot',()=>{const c={...default
 test('no backfill outside five-minute delivery window or quiet hours',()=>{const c={...defaultReminders('adhd'),enabled:true};assert.equal(dueReminders(c,now('2026-11-17T08:06:00Z')).length,0);assert.equal(dueReminders(c,now('2026-11-17T21:00:00Z')).length,0);});
 test('agent reminders skip weekends by default',()=>{const c={...defaultReminders('agent'),enabled:true};assert.equal(dueReminders(c,now('2026-11-21T08:00:00Z')).length,0);});
 test('invalid reminder schedules are rejected',()=>{assert.throws(()=>validateReminders({start:20,end:9},'adhd'));assert.throws(()=>validateReminders({waterEvery:1},'adhd'));});
-test('notification content is generic and includes no client data',()=>{assert.match(reminderMessage('adhd','water').body,/200 ml/);assert.match(reminderMessage('agent','work').title,/AGENT EMPIRE/);});
+test('notification content is generic and includes no client data',()=>{assert.match(reminderMessage('adhd','water').body,/200 ml/);assert.match(reminderMessage('agent','work').title,/ATRIA CRM/);});

@@ -6,13 +6,15 @@ import * as C from '../core.js';
 import {crmData} from '../crm-core.js';
 import {clientSections, crmTabs, offersView} from '../crm-ui.js';
 import {createCrmActions} from '../crm-actions.js';
+import * as OUI from '../office-ui.js';
+import {createOfficeActions} from '../office-actions.js';
 const source=readFileSync(new URL('../app.js',import.meta.url),'utf8').replace(/^import .*$/gm,'');
 function boot(initial={}){
  const items=new Map(Object.entries(initial)),nodes=new Map();
  const node=()=>({innerHTML:'',textContent:'',hidden:false,open:false,dataset:{},classList:{toggle(){},add(){},remove(){}},addEventListener(){},querySelector(){return null;},showModal(){this.open=true;},close(){this.open=false;},focus(){}});
  const document={querySelector:s=>{if(!nodes.has(s))nodes.set(s,node());return nodes.get(s);},querySelectorAll:()=>[],addEventListener(){},body:node(),activeElement:null,title:''};
  const localStorage={getItem:k=>items.get(k)??null,setItem:(k,v)=>items.set(k,v)};
- const context=vm.createContext({C,crmData,clientSections,crmTabs,offersView,createCrmActions,document,localStorage,navigator:{onLine:true},location:{protocol:'https:'},window:{addEventListener(){}},setInterval(){},setTimeout(){},clearTimeout(){},matchMedia:()=>({matches:false})});
+ const context=vm.createContext({C,crmData,clientSections,crmTabs,offersView,createCrmActions,...OUI,createOfficeActions,document,localStorage,navigator:{onLine:true},location:{protocol:'https:'},window:{addEventListener(){}},setInterval(){},setTimeout(){},clearTimeout(){},matchMedia:()=>({matches:false})});
  vm.runInContext(source+'\n;globalThis.api={getState:()=>state,dashboardView,pipelineView,missionsView,empireView,rewardsView,progressView,leadForm,taskForm,logForm,settings};',context);
  return {api:context.api,nodes,items};
 }

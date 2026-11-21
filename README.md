@@ -1,21 +1,23 @@
-# AGENT EMPIRE
+# ATRIA CRM
 
-Centrum dowodzenia dla agenta nieruchomości. Ciemna zieleń, szampańskie złoto i warstwa RPG powiązana z rzeczywistą pracą.
+CRM dla biura nieruchomości: klienci, sprawy, oferty, prezentacje, umowy pośrednictwa i dokumenty w jednym miejscu. Działa offline jako PWA na telefonie i komputerze.
 
 ## Funkcje
 
-- Pulpit z dziennymi telefonami, rozmowami, spotkaniami i umowami z ostatnich 7 dni.
-- Rejestr działań: telefon z wynikiem, follow-up, spotkanie, umowa, publikacja oferty, transakcja.
-- Lokalny lejek kontaktów: etap, telefon, rejon, nieruchomość, notatki i następny krok z datą.
-- Prowizje zapisane przy transakcjach, osobno od żetonów gry; cel miesiąca w ustawieniach.
-- Dzienny kontrakt: trzy cele, każdy bonus raz na dzień; ustawiane limity.
-- Własne misje i małe kroki, codzienne powtarzanie oraz gotowe szablony.
-- Imperium: siedziba, studio ofert i sieć kontaktów, po trzy poziomy za wpływ.
-- Poziomy agenta, odznaki, historia aktywności, zakupy nagród i wykres 7 dni.
-- Timer akwizycji 5/15/25/45 minut, pauza i odtwarzanie po odświeżeniu.
-- Własne nagrody, import/eksport, automatyczna migracja starego zapisu.
-- PWA, offline, obsługa telefonu i desktopu, ograniczony ruch i opcjonalne dźwięki.
-- Brak backendu i zewnętrznych bibliotek/CDN.
+- **Dziś**: zaległe i dzisiejsze kontakty, prezentacje, umowy kończące się w ciągu 14 dni, dokumenty do zebrania i liczby biura.
+- **Klienci**: lejek spraw (etap, rola, rejon, nieruchomość, budżet), wyszukiwarka i filtry.
+- **Karta klienta 360°**: Zadzwoń, SMS, WhatsApp i e-mail jednym przyciskiem; po telefonie od razu zapis wyniku. Jedna oś czasu z rozmowami, notatkami, wiadomościami, ofertami, dokumentami, prezentacjami i umową.
+- **Oferty**: statusy, szkic opisu z AI, eksport oferty do HTML.
+- **Prezentacje**: termin łączy oglądającego z ofertą; po prezentacji zapisujesz zainteresowanie, ocenę i opinię. Z opinii powstaje raport dla sprzedającego. Termin zapiszesz do kalendarza (.ics).
+- **Kojarzenie**: oferty „Gotowa” i „Opublikowana” dobierane do kryteriów kupującego (rodzaj, rejon, budżet, metraż) i pasujący kupujący przy ofercie. Listę ofert wysyłasz jednym przyciskiem.
+- **Umowa i transakcja**: umowa pośrednictwa (wyłączność, numer, okres, prowizja w %) i checklista transakcji od księgi wieczystej do protokołu zdawczo-odbiorczego.
+- **Szablony wiadomości** z polami {imię}, {agent}, {biuro}, {oferta}, {lokalizacja}, {cena}, {data}, {dokumenty}, {telefon}. Wysłana wiadomość trafia do historii klienta.
+- **RODO**: daty zgód i ich podstawa, usunięcie klienta razem z jego sprawami, ofertami, dokumentami, plikami i prezentacjami.
+- **Import leadów** z CSV albo wierszy wklejonych z Excela (np. z bazy leadów z ogłoszeń). Telefony są normalizowane, duplikaty pomijane.
+- **Raporty**: lejek leadów z okresu, źródła leadów, tempo pracy, prezentacje i prowizje z 6 miesięcy.
+- **Tryb gry** (domyślnie wyłączony, w ustawieniach): XP, żetony, misje, nagrody, Imperium i Teren. Wyłączenie niczego nie usuwa z zapisanych danych.
+- Powiadomienia, szyfrowana synchronizacja, kopia danych i ochrona przed wyczyszczeniem pamięci przeglądarki.
+- Brak zewnętrznych bibliotek/CDN.
 
 ## Publikacja
 
@@ -26,7 +28,7 @@ Dane są zapisane lokalnie w przeglądarce pod kluczem agent_empire_v2. Nie są 
 
 Stare klucze realestate_agent i realestate_quests pozostają nienaruszone. Dawne gold stają się żetonami gry; nie są migrowane jako rzeczywista prowizja. Ukończone stare misje nie przyznają nagrody ponownie.
 
-## Reguły
+## Reguły trybu gry
 
 | Działanie | XP | Żetony | Wpływ |
 | --- | ---: | ---: | ---: |

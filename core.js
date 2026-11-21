@@ -1,4 +1,5 @@
 import {validateCrm} from './crm-core.js';
+import {validateOffice} from './office-core.js';
 export const VERSION=2;
 export const TYPES={
  call:{label:'Telefon',short:'Telefony',xp:15,coins:10,influence:1,icon:'phone'},
@@ -159,7 +160,7 @@ export function migrate(agent,quests,now=Date.now()){
  return s;
 }
 export function validate(s){
- const fail=()=>{throw Error('Nieprawidłowa kopia danych AGENT EMPIRE v2.');},str=(v,n)=>typeof v==='string'&&v.length<=n,int=(v,max=10000000)=>Number.isSafeInteger(v)&&v>=0&&v<=max;
+ const fail=()=>{throw Error('Nieprawidłowa kopia danych ATRIA CRM.');},str=(v,n)=>typeof v==='string'&&v.length<=n,int=(v,max=10000000)=>Number.isSafeInteger(v)&&v>=0&&v<=max;
  if(!s||s.version!==VERSION||!s.settings||!s.legacy||!s.buildings)fail();
  for(const key of ['leads','activities','tasks','claims','purchases','rewards','upgrades'])if(!Array.isArray(s[key])||s[key].length>100000)fail();
  if(!str(s.settings.name,40)||!str(s.settings.agency,50)||!int(s.settings.calls,100)||s.settings.calls<1||!int(s.settings.conversations,100)||s.settings.conversations<1||!int(s.settings.meetings,20)||s.settings.meetings<1||!int(s.settings.monthlyGoal,10000000)||s.settings.monthlyGoal<1)fail();
@@ -174,6 +175,8 @@ export function validate(s){
  }
  for(const lead of s.leads)if(lead.clientId!==undefined&&(!leadIds.has(lead.clientId)||lead.clientId===lead.id))fail();
  validateCrm(s.crm,s.leads);
+ validateOffice(s.office,s.leads,s.crm);
+ if(s.settings.game!==undefined&&typeof s.settings.game!=='boolean')fail();
  const milestones=new Set();
  for(const a of s.activities){checks(a);if(!Object.hasOwn(TYPES,a.type)||!(a.leadId===null||leadIds.has(a.leadId))||!str(a.leadName,100)||!str(a.note,300)||!isDay(a.day)||!Number.isFinite(a.time)||!['reached','declined','noanswer','done'].includes(a.outcome)||!int(a.commissionGrosz,1000000000)||typeof a.voided!=='boolean')fail();if(a.type!=='sale'&&a.commissionGrosz!==0)fail();if(['sale','mandate','listing'].includes(a.type)&&a.leadId&&!a.voided){const key=a.leadId+':'+a.type;if(milestones.has(key))fail();milestones.add(key);}}
  for(const t of s.tasks){checks(t);if(!str(t.title,160)||!t.title.trim()||!isDay(t.date)||!['none','daily'].includes(t.repeat)||!Object.hasOwn(TASK_REWARDS,t.tier)||!Array.isArray(t.steps)||t.steps.length>10||t.steps.some(x=>!str(x,160))||!Array.isArray(t.records)||t.records.length>100000||typeof t.archived!=='boolean')fail();const seen=new Set();for(const r of t.records){checks(r);if(!isDay(r.day)||!Number.isFinite(r.time)||!(r.occurrence==='once'||isDay(r.occurrence))||!int(r.step,(t.steps.length||1)-1))fail();const key=r.occurrence+':'+r.step;if(seen.has(key))fail();seen.add(key);for(const k of ['xp','coins','influence'])if(!int(r[k],1000))fail();}}
