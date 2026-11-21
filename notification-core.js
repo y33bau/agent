@@ -28,5 +28,5 @@ export function validateReminders(raw,app){
 }
 export function reminderMessage(app,kind){
  if(kind==='water')return {title:'SYNAPSE · porcja wody',body:'Czas na 200 ml. Jeden mały rytuał w stronę celu 2 l.',tag:'synapse-water'};
- return app==='agent'?{title:'AGENT EMPIRE · następny ruch',body:'Jeden kontakt. Jeden konkretny następny krok. Wracamy do gry?',tag:'agent-work'}:{title:'SYNAPSE · mały krok',body:'Wybierz jedną rzecz. Spróbuj przez 5 minut — reszta może poczekać.',tag:'synapse-work'};
+ return app==='agent'?{title:'ATRIA CRM · następny kontakt',body:'Jeden kontakt. Jeden konkretny następny krok. Sprawdź ekran „Dziś”.',tag:'agent-work'}:{title:'SYNAPSE · mały krok',body:'Wybierz jedną rzecz. Spróbuj przez 5 minut — reszta może poczekać.',tag:'synapse-work'};
 }

@@ -262,3 +262,43 @@ dialog{background:#172e42;border-color:#dfc58a59}
  .field input,.field select,.field textarea{font-size:16px}
  .office-intro .subtitle{max-width:25ch}
 }
+
+/* ATRIA CRM 2.9: tryb biurowy */
+.office-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.office-kpi{display:grid;gap:4px;text-align:left;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:#ffffff06;color:inherit;font:inherit}
+button.office-kpi{cursor:pointer}button.office-kpi:hover{border-color:#d9bd7955}
+.office-kpi strong{font-size:22px;color:var(--cream)}.office-kpi span{font-size:12px;color:var(--muted)}
+.office-panel .section-head{margin-bottom:12px;gap:10px;flex-wrap:wrap}
+.office-list{display:grid;gap:10px}
+.office-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-left:3px solid var(--green);border-radius:12px;background:#ffffff04}
+.office-row.late{border-left-color:var(--red)}.office-row.warn{border-left-color:var(--gold)}
+.office-row>.office-kind{grid-column:1/-1;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.office-row.late>.office-kind{color:var(--red)}.office-row.warn>.office-kind{color:var(--gold)}
+.office-row p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.office-row .row{gap:6px;justify-content:flex-end}
+.office-row .btn,.office-mini .btn{min-height:38px;padding:8px 12px;font-size:13px}
+.office-mini{display:grid;gap:3px;width:100%;text-align:left;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#ffffff04;color:inherit;font:inherit}
+button.office-mini{cursor:pointer}button.office-mini:hover{border-color:#d9bd7955}
+.office-mini span{font-size:12px;color:var(--gold)}.office-mini small{font-size:13px;color:var(--muted)}
+.office-mini .row{gap:6px;margin-top:6px}
+.office-day{margin:18px 0}.office-day h3{margin:0 0 10px;font-size:15px;color:var(--cream)}.office-day h3::first-letter{text-transform:uppercase}
+.office-calendar-nav{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0}.office-calendar-nav strong{text-align:center;font-size:14px}
+.office-contact-bar{gap:8px;margin:0 0 14px}
+.office-contact-bar .btn{flex:1 1 90px}
+.office-checklist{display:grid;gap:2px;margin:10px 0}
+.office-checklist .setting-line{padding:8px 0;font-size:14px}
+.office-bars{display:grid;gap:10px}
+.office-bar{display:grid;grid-template-columns:110px minmax(0,1fr) 70px;align-items:center;gap:10px;font-size:13px}
+.office-bar .track{margin:0;height:8px}.office-bar strong{text-align:right}.office-bar small{color:var(--muted);font-weight:400}
+.office-columns{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end;height:140px}
+.office-colbar{display:grid;grid-template-rows:1fr auto;height:100%;gap:6px;text-align:center}
+.office-colbar>div{align-self:end;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--gold),#aa975d)}
+.office-colbar small{font-size:12px;color:var(--muted)}
+.office-table{width:100%;border-collapse:collapse;font-size:14px}
+.office-table th,.office-table td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+.office-table th{font-size:12px;color:var(--muted);font-weight:500}
+.office-template .crm-copy{white-space:pre-wrap}
+.office-send{gap:8px;margin:10px 0}
+#office-compose-form textarea{font-size:15px}
+@media(max-width:760px){.office-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.office-row{grid-template-columns:1fr}.office-row .row{justify-content:flex-start}}
+@media(max-width:480px){.office-bar{grid-template-columns:90px minmax(0,1fr) 56px}}
