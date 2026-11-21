@@ -5,6 +5,6 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check core.js && node --check app.js && node --check sw.js && node --check notifications.js && node --check notification-core.js"
+    "check": "node --check core.js && node --check app.js && node --check sw.js && node --check notifications.js && node --check notification-core.js && for f in crm-*.js features.js sync.js sync-crypto.js offer-ai.js companion.js companion-core.js updates.js storage-guard.js; do node --check $f || exit 1; done"
   }
 }
