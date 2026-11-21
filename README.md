@@ -64,3 +64,7 @@ PWA offline działa po pierwszym pełnym załadowaniu przez HTTPS. Aktualizacja 
 Ustawienia → Powiadomienia i przypomnienia. Zgoda systemowa jest pytana dopiero po naciśnięciu przycisku. Przypomnienia lokalne działają przy otwartej aplikacji, w wybranych godzinach; nie są push po jej zamknięciu. iPhone wymaga aplikacji dodanej do ekranu początkowego.
 
 Prawdziwy Web Push jest obsługiwany przez service worker i panel połączenia. Wymaga uruchomienia prywatnej usługi z katalogu push-server w repozytorium agent, kluczy VAPID i wpisania jej adresu oraz klucza dostępu. Bez tego aplikacja uczciwie pokazuje, że działa tylko tryb lokalny. Serwer otrzymuje subskrypcję urządzenia i harmonogram, bez treści zadań, kontaktów i prowizji.
+
+## Ochrona danych
+
+Plik `storage-guard.js` (identyczny w agent i RPG-ADHD) przy pierwszym zapisie prosi przeglądarkę o trwałe przechowywanie (`navigator.storage.persist()`). W Ustawieniach pokazuje, czy dane są chronione i kiedy pobrano ostatnią kopię. Gdy kopia jest starsza niż 7 dni, raz dziennie przypomina o niej krótkim komunikatem. Synchronizacja zapamiętuje skrót SHA-256 ostatniego stanu zamiast jego pełnej kopii, więc nie zajmuje drugi raz miejsca w localStorage.
