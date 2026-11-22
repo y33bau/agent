@@ -76,9 +76,6 @@ async function request(config,path,body){
  }catch{throw Error(controller.signal.aborted?'Przekroczono czas oczekiwania.':'Nie udało się połączyć z Workerem. Sprawdź adres i internet.');}
  finally{clearTimeout(timer);}
  if(!response.ok || !data){
-  if(path==='/v1/notes' && response.status===404){
-   throw Error('Notatki AI wymagają aktualizacji Workera. Wpisz treść i zapisz notatkę ręcznie.');
-  }
   if(body?.provider==='cloudflare' && data?.error==='provider_setup'){
    throw Error('Sprawdź, czy Worker ma włączone Cloudflare AI i jest zaktualizowany.');
   }
@@ -170,16 +167,33 @@ function applyDraft(form,draft){
  status(form,'Wstawiono tytuł i opis. Sprawdź treść i zapisz ofertę.');
 }
 
+// Explicit dates and actions only. Keep dictated wording and require review before saving.
+function localNoteDraft(original){
+ const note=original.replace(/\r\n?/g,'\n').split('\n').map(line=>line.trim().replace(/[ \t]+/g,' ')).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+ const parts=note.split(/[\n;]+|(?<=[.!?])\s+(?=[\p{Lu}])/u);
+ const actions=parts.map(part=>part.trim()).filter(part=>/^(?:(?:następny krok|do zrobienia|następny kontakt)\s*:|(?:oddzwonić|zadzwonić|wysłać|umówić|potwierdzić)(?=\s|[.,!?]|$))/iu.test(part));
+ const action=actions.length===1?actions[0].replace(/^(?:następny krok|do zrobienia|następny kontakt)\s*:\s*/iu,''):'';
+ const nextAction=action.slice(0,200);
+ const dates=new Set();
+ for(const match of action.matchAll(/(?<![\d./-])(?:([2]\d{3})-(\d{2})-(\d{2})|(\d{1,2})[./](\d{1,2})[./]([2]\d{3}))(?![\d./-])/g)){
+  const [,year,month,day,localDay,localMonth,localYear]=match;
+  const key=[year||localYear,(month||localMonth).padStart(2,'0'),(day||localDay).padStart(2,'0')].join('-');
+  const date=new Date(key+'T12:00:00Z');
+  if(Number.isFinite(date.getTime()) && date.toISOString().startsWith(key))dates.add(key);
+ }
+ return {note,nextAction,nextDate:dates.size===1&&nextAction?[...dates][0]:''};
+}
+
 const noteDrafts=new WeakMap();
-document.addEventListener('click',async event=>{
- const button=event.target.closest('[data-note-ai]');
+document.addEventListener('click',event=>{
+ const button=event.target.closest('[data-note-helper]');
  const form=button?.closest('#crm-record-form[data-kind=note]');
  if(!form) return;
  const status=form.querySelector('[data-note-status]');
  const body=form.elements.namedItem('body');
  const preview=form.querySelector('[data-note-result]');
  const proposed=form.querySelector('[data-note-draft]');
- if(button.dataset.noteAi==='apply'){
+ if(button.dataset.noteHelper==='apply'){
   const draft=noteDrafts.get(form);
   if(!draft || body.value!==draft.original || !proposed.value.trim()){
    status.textContent='Sprawdź treść i wygeneruj propozycję ponownie.';
@@ -197,26 +211,17 @@ document.addEventListener('click',async event=>{
  }
  const original=body.value;
  if(!original.trim()){status.textContent='Najpierw wpisz lub podyktuj notatkę.';return;}
- const config=storedConfig();
- if(!config.token){status.textContent='Najpierw połącz generator AI w formularzu dowolnej oferty.';return;}
- preview.hidden=true;
- button.disabled=true;
- status.textContent='Porządkuję notatkę…';
- try{
-  const {draft}=await request(validatedConfig(config.url||defaultWorker,config.token,'cloudflare'),'/v1/notes',{text:original.trim()});
-  if(!draft?.note || typeof draft.note!=='string' || draft.note.length>4000)throw Error(errors.invalid_draft);
-  proposed.value=draft.note;
-  noteDrafts.set(form,{original,nextDate:draft.nextDate,nextAction:draft.nextAction});
-  const hint=document.createElement('p');
-  hint.className='subtitle';
-  hint.dataset.noteHint='';
-  hint.textContent=[draft.nextDate,draft.nextAction].filter(Boolean).join(' · ')||'AI nie zaproponowało następnego kontaktu.';
-  preview.querySelector('[data-note-hint]')?.remove();
-  preview.prepend(hint);
-  preview.hidden=false;
-  status.textContent='Sprawdź propozycję przed wstawieniem.';
- }catch(error){status.textContent=error.message;}
- finally{button.disabled=false;}
+ const draft=localNoteDraft(original);
+ proposed.value=draft.note;
+ noteDrafts.set(form,{original,nextDate:draft.nextDate,nextAction:draft.nextAction});
+ const hint=document.createElement('p');
+ hint.className='subtitle';
+ hint.dataset.noteHint='';
+ hint.textContent=[draft.nextDate,draft.nextAction].filter(Boolean).join(' · ')||'Brak jednoznacznej propozycji następnego kontaktu.';
+ preview.querySelector('[data-note-hint]')?.remove();
+ preview.prepend(hint);
+ preview.hidden=false;
+ status.textContent='Sprawdź propozycję przed wstawieniem.';
 });
 
 document.addEventListener('toggle',event=>{
