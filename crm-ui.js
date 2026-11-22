@@ -103,9 +103,9 @@ export function crmForm(kind, lead, record){
   '<details><summary>Zdjęcia i ogłoszenia</summary><p class="subtitle">Wklej maks. 8 adresów HTTPS w każdym polu, po jednym w wierszu. Zdjęcia powinny prowadzić bezpośrednio do pliku.</p>'+
   textarea('photos','Linki do zdjęć',data.photos?.join('\n'),9700)+textarea('listings','Linki do opublikowanych ogłoszeń',data.listings?.join('\n'),9700)+'</details>';
  if(kind==='note') body=select('type','Rodzaj wpisu',data.type,NOTE_TYPES)+textarea('body','Treść wpisu',data.body,4000,true)+
-  '<details class="crm-ai"><summary>Uporządkuj notatkę z AI</summary><p class="subtitle">Na iPhonie stuknij mikrofon klawiatury w polu treści i podyktuj notatkę. Przed analizą usuń z niej dane osobowe. Do Cloudflare trafia tylko treść tego pola.</p>'+
-  '<button class="btn gold" type="button" data-note-ai="suggest">Zaproponuj notatkę i dalszy kontakt</button><p class="subtitle" data-note-status role="status"></p>'+
-  '<div data-note-result hidden><label class="field">Proponowana notatka<textarea data-note-draft rows="4" maxlength="4000"></textarea></label><button class="btn ghost" type="button" data-note-ai="apply">Wstaw notatkę do formularza</button></div>'+
+  '<details class="crm-ai"><summary>Uporządkuj notatkę</summary><p class="subtitle">Na iPhonie stuknij mikrofon klawiatury w polu treści i podyktuj notatkę. Tekst jest porządkowany w przeglądarce. Aby podpowiedzieć kontakt, wpisz np. „Następny krok: Oddzwonić 25.11.2026”.</p>'+
+  '<button class="btn gold" type="button" data-note-helper="suggest">Zaproponuj notatkę i dalszy kontakt</button><p class="subtitle" data-note-status role="status"></p>'+
+  '<div data-note-result hidden><label class="field">Proponowana notatka<textarea data-note-draft rows="4" maxlength="4000"></textarea></label><button class="btn ghost" type="button" data-note-helper="apply">Wstaw notatkę do formularza</button></div>'+
   '</details><details data-note-followup><summary>Następny kontakt</summary><p class="subtitle">Uzupełnij tylko pola, które chcesz zmienić przy zapisie.</p>'+
   input('nextDate','Data kontaktu','',0,'date')+input('nextAction','Następny krok','',200)+'</details>';
  if(kind==='document') body=input('title','Nazwa dokumentu',data.title,160,'text',true)+'<div class="form-grid">'+
