@@ -260,8 +260,9 @@ function resolveTab(id){
 }
 function todayView(){
  const day=today();
- return (notice?'<div class="notice">'+esc(notice)+'</div>':'')+officeHeader('Dziś',esc(new Date(day+'T12:00:00').toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'})),
-  '<button class="btn gold" data-action="lead-add">'+icon('plus')+'Dodaj lead</button><button class="btn ghost" data-action="office-viewing-add">'+icon('calendar')+'Zaplanuj prezentację</button>',state.settings.agency)+todaySections(state,day);
+ return (notice?'<div class="notice">'+esc(notice)+'</div>':'')+officeHeader('Dziś','',
+  '<button class="btn gold" data-action="lead-add">'+icon('plus')+'Dodaj lead</button><button class="btn ghost" data-action="office-viewing-add">'+icon('calendar')+'Zaplanuj prezentację</button>',state.settings.agency)+
+  '<section class="panel dashboard-weather office-today-weather" id="dashboard-weather" aria-label="Data i pogoda"></section>'+todaySections(state,day);
 }
 function officeCalendarView(){return heading('Kalendarz','Kontakty, prezentacje i kończące się umowy.','office-viewing-add','Zaplanuj prezentację')+calendarView(state,today(),calOffset);}
 function officeReportsView(){return heading('Raporty','Lejek, źródła leadów, prezentacje i prowizje.')+reportsView(state,today(),reportPeriod);}

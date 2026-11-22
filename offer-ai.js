@@ -22,19 +22,22 @@ const find=(form,name)=>form.querySelector('[data-ai-'+name+']');
 function storedConfig(){
  try{return JSON.parse(localStorage.getItem(key)) || {};}catch{return {};}
 }
-function configFrom(form){
+function validatedConfig(address,code,provider){
  let url;
- try{url=new URL(find(form,'url').value.trim());}catch{}
+ try{url=new URL(address.trim());}catch{}
  if(!url || url.protocol!=='https:' || !/^[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev$/i.test(url.hostname) ||
     url.port || url.username || url.password || url.pathname!=='/' || url.search || url.hash){
   throw Error('Wklej adres Workera w domenie workers.dev, bez dodatkowej ścieżki.');
  }
- const token=find(form,'token').value.trim();
+ const token=code.trim();
  const length=[...token].length;
  if(length<10) throw Error('Kod ma '+length+' znaków. Minimum to 10.');
  if(length>128) throw Error('Kod może mieć maksymalnie 128 znaków.');
  if(/\p{Cc}/u.test(token)) throw Error('Kod zawiera znak sterujący, np. tabulator lub koniec linii.');
- return {url:url.origin,token,provider:find(form,'provider').value};
+ return {url:url.origin,token,provider};
+}
+function configFrom(form){
+ return validatedConfig(find(form,'url').value,find(form,'token').value,find(form,'provider').value);
 }
 function status(form,message,target='status'){find(form,target).textContent=message;}
 function restore(form){
@@ -73,6 +76,9 @@ async function request(config,path,body){
  }catch{throw Error(controller.signal.aborted?'Przekroczono czas oczekiwania.':'Nie udało się połączyć z Workerem. Sprawdź adres i internet.');}
  finally{clearTimeout(timer);}
  if(!response.ok || !data){
+  if(path==='/v1/notes' && response.status===404){
+   throw Error('Notatki AI wymagają aktualizacji Workera. Wpisz treść i zapisz notatkę ręcznie.');
+  }
   if(body?.provider==='cloudflare' && data?.error==='provider_setup'){
    throw Error('Sprawdź, czy Worker ma włączone Cloudflare AI i jest zaktualizowany.');
   }
@@ -163,6 +169,55 @@ function applyDraft(form,draft){
  find(form,'result').hidden=true;
  status(form,'Wstawiono tytuł i opis. Sprawdź treść i zapisz ofertę.');
 }
+
+const noteDrafts=new WeakMap();
+document.addEventListener('click',async event=>{
+ const button=event.target.closest('[data-note-ai]');
+ const form=button?.closest('#crm-record-form[data-kind=note]');
+ if(!form) return;
+ const status=form.querySelector('[data-note-status]');
+ const body=form.elements.namedItem('body');
+ const preview=form.querySelector('[data-note-result]');
+ const proposed=form.querySelector('[data-note-draft]');
+ if(button.dataset.noteAi==='apply'){
+  const draft=noteDrafts.get(form);
+  if(!draft || body.value!==draft.original || !proposed.value.trim()){
+   status.textContent='Sprawdź treść i wygeneruj propozycję ponownie.';
+   return;
+  }
+  body.value=proposed.value.trim();
+  const followup=form.querySelector('[data-note-followup]');
+  followup.open=true;
+  const inputDate=form.elements.namedItem('nextDate'), inputAction=form.elements.namedItem('nextAction');
+  if(draft.nextDate && !inputDate.value)inputDate.value=draft.nextDate;
+  if(draft.nextAction && !inputAction.value)inputAction.value=draft.nextAction;
+  preview.hidden=true;
+  status.textContent='Sprawdź notatkę i pola następnego kontaktu. Zmiany zapisze przycisk Zapisz.';
+  return;
+ }
+ const original=body.value;
+ if(!original.trim()){status.textContent='Najpierw wpisz lub podyktuj notatkę.';return;}
+ const config=storedConfig();
+ if(!config.token){status.textContent='Najpierw połącz generator AI w formularzu dowolnej oferty.';return;}
+ preview.hidden=true;
+ button.disabled=true;
+ status.textContent='Porządkuję notatkę…';
+ try{
+  const {draft}=await request(validatedConfig(config.url||defaultWorker,config.token,'cloudflare'),'/v1/notes',{text:original.trim()});
+  if(!draft?.note || typeof draft.note!=='string' || draft.note.length>4000)throw Error(errors.invalid_draft);
+  proposed.value=draft.note;
+  noteDrafts.set(form,{original,nextDate:draft.nextDate,nextAction:draft.nextAction});
+  const hint=document.createElement('p');
+  hint.className='subtitle';
+  hint.dataset.noteHint='';
+  hint.textContent=[draft.nextDate,draft.nextAction].filter(Boolean).join(' · ')||'AI nie zaproponowało następnego kontaktu.';
+  preview.querySelector('[data-note-hint]')?.remove();
+  preview.prepend(hint);
+  preview.hidden=false;
+  status.textContent='Sprawdź propozycję przed wstawieniem.';
+ }catch(error){status.textContent=error.message;}
+ finally{button.disabled=false;}
+});
 
 document.addEventListener('toggle',event=>{
  const form=event.target.closest?.('#crm-record-form[data-kind=offer]');

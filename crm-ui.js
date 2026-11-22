@@ -1,4 +1,5 @@
 import {crmData, OFFER_STATUS, TRANSACTION, NOTE_TYPES, DOCUMENT_TYPES, DOCUMENT_STATUS} from './crm-core.js';
+import {officeData, VIEWING_STATUS} from './office-core.js';
 
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character =>
  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[character]);
@@ -98,8 +99,15 @@ export function crmForm(kind, lead, record){
   input('property','Typ nieruchomości',data.property ?? lead.property,100,'text',true)+input('location','Miejscowość lub rejon',data.location ?? lead.area,150,'text',true)+
   numberInput('price','Cena (zł)',record ? data.price : (['seller','landlord'].includes(lead.role)?lead.price:null),1e9)+
   numberInput('area','Powierzchnia (m²)',record ? data.area : (['seller','landlord'].includes(lead.role)?lead.size:null),1e6)+'</div>'+
-  aiPanel()+textarea('description','Opis dla klienta',data.description,8000)+textarea('internal','Notatka wewnętrzna',data.internal,3000);
- if(kind==='note') body=select('type','Rodzaj wpisu',data.type,NOTE_TYPES)+textarea('body','Treść wpisu',data.body,4000,true);
+  aiPanel()+textarea('description','Opis dla klienta',data.description,8000)+textarea('internal','Notatka wewnętrzna',data.internal,3000)+
+  '<details><summary>Zdjęcia i ogłoszenia</summary><p class="subtitle">Wklej maks. 8 adresów HTTPS w każdym polu, po jednym w wierszu. Zdjęcia powinny prowadzić bezpośrednio do pliku.</p>'+
+  textarea('photos','Linki do zdjęć',data.photos?.join('\n'),9700)+textarea('listings','Linki do opublikowanych ogłoszeń',data.listings?.join('\n'),9700)+'</details>';
+ if(kind==='note') body=select('type','Rodzaj wpisu',data.type,NOTE_TYPES)+textarea('body','Treść wpisu',data.body,4000,true)+
+  '<details class="crm-ai"><summary>Uporządkuj notatkę z AI</summary><p class="subtitle">Na iPhonie stuknij mikrofon klawiatury w polu treści i podyktuj notatkę. Przed analizą usuń z niej dane osobowe. Do Cloudflare trafia tylko treść tego pola.</p>'+
+  '<button class="btn gold" type="button" data-note-ai="suggest">Zaproponuj notatkę i dalszy kontakt</button><p class="subtitle" data-note-status role="status"></p>'+
+  '<div data-note-result hidden><label class="field">Proponowana notatka<textarea data-note-draft rows="4" maxlength="4000"></textarea></label><button class="btn ghost" type="button" data-note-ai="apply">Wstaw notatkę do formularza</button></div>'+
+  '</details><details data-note-followup><summary>Następny kontakt</summary><p class="subtitle">Uzupełnij tylko pola, które chcesz zmienić przy zapisie.</p>'+
+  input('nextDate','Data kontaktu','',0,'date')+input('nextAction','Następny krok','',200)+'</details>';
  if(kind==='document') body=input('title','Nazwa dokumentu',data.title,160,'text',true)+'<div class="form-grid">'+
   select('type','Rodzaj',data.type,DOCUMENT_TYPES)+select('status','Status',data.status,DOCUMENT_STATUS)+'</div>'+
   input('reference','Numer lub oznaczenie',data.reference,120)+input('url','Link do dokumentu',data.url,1200,'url')+
@@ -109,8 +117,26 @@ export function crmForm(kind, lead, record){
  return '<form id="crm-record-form" data-kind="'+kind+'" data-id="'+e(data.id)+'" data-lead="'+e(lead.id)+'">'+body+
   '<div class="form-actions">'+btn('client-card',lead.id,'Wróć do klienta')+'<button class="btn gold" type="submit">Zapisz</button></div></form>';
 }
-export function offerPreview(offer){
+export function offerPreview(offer,state){
+ const lead=state.leads.find(entry=>entry.id===offer.caseId);
+ const office=officeData(state);
+ const mandate=office.mandates.find(entry=>entry.leadId===offer.caseId);
+ const docs=crmData(state).documents.filter(doc=>doc.clientId===offer.clientId);
+ const visits=office.viewings.filter(v=>v.offerId===offer.id).sort((a,b)=>b.date.localeCompare(a.date));
+ const links=(items,kind)=>(items||[]).map((url,i)=>'<a class="btn ghost" href="'+e(url)+'" target="_blank" rel="noopener noreferrer">'+kind+' '+(i+1)+'</a>').join('');
+ const history=(offer.priceHistory||[]).slice().reverse().map(change=>line(date(change.at)+' · '+(price(change.price)||'Cena wycofana'))).join('');
  return '<div class="crm-stack">'+item('<span class="stage-badge">'+OFFER_STATUS[offer.status]+'</span>'+line(summary(offer))+line(offer.description))+
+ (lead?section('Sprawa i dokumenty',btn('client-card',offer.caseId,'Otwórz klienta'),
+  line('Następny kontakt: '+lead.nextDate+' · '+lead.nextAction)+
+  line(mandate?'Umowa do '+mandate.end:'Brak zapisanej umowy pośrednictwa')+
+  line('Dokumenty klienta: '+docs.filter(doc=>doc.status==='needed').length+' do pozyskania / '+docs.length+' łącznie')):'')+
+ section('Prezentacje','<button type="button" class="btn ghost" data-action="office-viewing-add" data-offer="'+e(offer.id)+'">Zaplanuj</button>',
+  visits.map(v=>item(line(v.date+' '+(v.time||'')+' · '+(state.leads.find(entry=>entry.id===v.buyerId)?.name||'')+' · '+VIEWING_STATUS[v.status])+
+   line(v.feedback)+btn('office-viewing-edit',v.id,'Otwórz prezentację'))).join('')||blank('Brak prezentacji tej oferty.'))+
+ (offer.photos?.length?section('Zdjęcia','', '<div class="office-property-photos">'+offer.photos.map((url,i)=>
+  '<a href="'+e(url)+'" target="_blank" rel="noopener noreferrer"><img src="'+e(url)+'" loading="lazy" referrerpolicy="no-referrer" alt="Zdjęcie nieruchomości '+(i+1)+'"></a>').join('')+'</div>'):'')+
+ (offer.listings?.length?section('Opublikowane ogłoszenia','', '<div class="row wrap">'+links(offer.listings,'Ogłoszenie')+'</div>'):'')+
+ (history?section('Historia ceny','','<details><summary>Pokaż zmiany ceny</summary>'+history+'</details>'):'')+
  (offer.internal?section('Notatka wewnętrzna','',line(offer.internal)):'')+
  '<div class="row wrap">'+btn('crm-offer-edit',offer.id,'Edytuj','gold')+
  btn('crm-offer-export',offer.id,'Pobierz ofertę do druku')+btn('client-card',offer.caseId,'Otwórz klienta')+'</div></div>';

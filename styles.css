@@ -302,3 +302,6 @@ button.office-mini{cursor:pointer}button.office-mini:hover{border-color:#d9bd795
 #office-compose-form textarea{font-size:15px}
 @media(max-width:760px){.office-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.office-row{grid-template-columns:1fr}.office-row .row{justify-content:flex-start}}
 @media(max-width:480px){.office-bar{grid-template-columns:90px minmax(0,1fr) 56px}}
+.office-today-weather{margin:16px 0}
+.office-property-photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.office-property-photos img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:var(--panel)}

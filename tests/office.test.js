@@ -4,6 +4,9 @@ import * as C from '../core.js';
 import * as O from '../office-core.js';
 import * as U from '../office-ui.js';
 import {viewingIcs} from '../office-actions.js';
+import {crmRecord} from '../crm-core.js';
+import {offerPreview} from '../crm-ui.js';
+import worker from '../offer-ai-worker/worker.js';
 
 function sample(){
  const now = Date.now(), day = C.dayKey(now), s = C.fresh(now);
@@ -15,6 +18,51 @@ function sample(){
   notes:[], documents:[{id:'d1', clientId:seller.id, title:'KW', reference:'', url:'', description:'', filename:'a.pdf', fileKey:'file-1', type:'property', status:'needed', createdAt:now, updatedAt:now}]};
  return {s, seller, buyer, day, now};
 }
+
+test('property card renders saved links, price history and related case information', () => {
+ const {s, seller, buyer, day, now} = sample();
+ const offer=s.crm.offers[0];
+ const photos=['https://example.com/photo.jpg'], listings=['https://example.com/listing'];
+ Object.assign(offer,{photos,listings,priceHistory:[{at:now,price:440000},{at:now+1000,price:420000}]});
+ O.saveViewing(s,{buyerId:buyer.id,offerId:offer.id,date:day,time:'10:00'});
+ O.saveMandate(s,{leadId:seller.id,start:day,end:O.addDays(day,7)});
+ C.validate(JSON.parse(JSON.stringify(s)));
+ const html=offerPreview(offer,s);
+ for(const word of ['photo.jpg','example.com/listing','440','Umowa do','do pozyskania','Marta &lt;b&gt;']){
+  assert.ok(html.includes(word),word);
+ }
+ assert.throws(()=>crmRecord('offer',{...offer,listings:['javascript:alert(1)']}),/HTTPS/);
+ assert.throws(()=>crmRecord('offer',{...offer,photos:['https://user:pass@example.com/image.jpg']}),/HTTPS/);
+});
+
+test('deferred leads are counted as incoming without assuming later stages', () => {
+ const {s, seller, day}=sample();
+ seller.stage='lost';
+ const result=O.report(s,day,day);
+ assert.equal(result.funnel.find(item=>item.stage==='new').count,result.leads);
+ assert.equal(result.funnel.find(item=>item.stage==='meeting').count,0);
+});
+
+test('AI note endpoint authenticates and returns an editable suggestion with a valid date', async () => {
+ const secret='test-only-access';
+ const limit={limit:async()=>({success:true})};
+ let prompt;
+ const env={
+  ATRIA_AI_TOKEN:secret,AUTH_RATE_LIMIT:limit,OFFER_RATE_LIMIT:limit,
+  AI:{run:async(_model,params)=>{
+   prompt=params;
+   return {response:{note:'Kupujący poprosił o kolejne spotkanie.',nextDate:'2026-02-30',nextAction:'Ustalić termin'}};
+  }}
+ };
+ const request=token=>new Request('https://worker.example/v1/notes',{method:'POST',
+  headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+  body:JSON.stringify({text:'Prośba o kolejne spotkanie.',ignored:'dane testowe'})});
+ assert.equal((await worker.fetch(request('wrong-access'),env)).status,401);
+ const response=await worker.fetch(request(secret),env);
+ assert.equal(response.status,200);
+ assert.deepEqual((await response.json()).draft,{note:'Kupujący poprosił o kolejne spotkanie.',nextDate:'',nextAction:'Ustalić termin'});
+ assert.deepEqual(JSON.parse(prompt.messages[1].content),{text:'Prośba o kolejne spotkanie.'});
+});
 
 test('viewings are validated, saved and survive full validation', () => {
  const {s, buyer, seller, day} = sample();

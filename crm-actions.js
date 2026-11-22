@@ -1,6 +1,7 @@
 import {crmData, crmRecord} from './crm-core.js';
 import {crmForm, escapeHtml, offerPreview, publicOfferHtml} from './crm-ui.js';
 import {putFile, readFile, removeFile} from './crm-files.js';
+import {isDay} from './core.js';
 
 const collections = {profile:'profiles', offer:'offers', note:'notes', document:'documents'};
 const titles = {profile:'Profil klienta', offer:'Oferta nieruchomości', note:'Wpis w historii', document:'Dokument klienta'};
@@ -56,7 +57,7 @@ export function createCrmActions({getState, commit, uid, modal, clientCard, toas
   const entry=record(kind,id);
   if(!entry) return;
   if(verb==='edit'){form(kind,findLead(entry.caseId || entry.clientId),entry);return;}
-  if(verb==='preview'){modal(entry.title,offerPreview(entry));return;}
+  if(verb==='preview'){modal(entry.title,offerPreview(entry,getState()));return;}
   if(verb==='export'){
    const html=publicOfferHtml(entry,getState().settings.agency);
    download(new Blob([html],{type:'text/html;charset=utf-8'}),'oferta-'+entry.id.slice(0,8).replace(/[^a-z0-9-]/gi,'')+'.html');
@@ -74,6 +75,10 @@ export function createCrmActions({getState, commit, uid, modal, clientCard, toas
   if(id && (!old || old.clientId!==clientId)) throw Error('Wpis zmienił się. Otwórz go ponownie.');
   const entryId=old?.id || uid();
   const now=Date.now();
+  if(kind==='offer'){
+   for(const key of ['photos','listings']) values[key]=String(values[key]??'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+  }
+  if(kind==='note' && values.nextDate && !isDay(values.nextDate)) throw Error('Wybierz prawidłową datę kontaktu.');
   let fileKey=old?.fileKey;
   const file=kind==='document' && values.file?.size ? values.file : null;
   if(file && file.size>25*1024*1024) throw Error('Plik przekracza 25 MB.');
@@ -98,7 +103,19 @@ export function createCrmActions({getState, commit, uid, modal, clientCard, toas
       contact.phone=String(values.phone || '').trim().slice(0,40);
      }
     }
-    if(kind==='offer') entry.caseId=old?.caseId || leadId;
+    if(kind==='offer'){
+     entry.caseId=existing?.caseId || leadId;
+     const history=[...(existing?.priceHistory||[])];
+     if(existing && !history.length && existing.price!==null) history.push({at:existing.updatedAt,price:existing.price});
+     if(existing ? existing.price!==entry.price : entry.price!==null) history.push({at:now,price:entry.price});
+     entry.priceHistory=history.slice(-100);
+    }
+    if(kind==='note'){
+     const currentLead=next.leads.find(item=>item.id===leadId);
+     if(!currentLead) throw Error('Sprawa klienta jest niedostępna.');
+     if(values.nextDate) currentLead.nextDate=values.nextDate;
+     if(values.nextAction?.trim()) currentLead.nextAction=values.nextAction.trim().slice(0,200);
+    }
     if(fileKey) entry.fileKey=fileKey;
     if(existing) list[list.indexOf(existing)]=entry;
     else list.push(entry);

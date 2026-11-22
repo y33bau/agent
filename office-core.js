@@ -314,7 +314,7 @@ export function report(state, from, to){
  const crm = crmData(state);
  const inRange = day => day >= from && day <= to;
  const leads = state.leads.filter(lead => inRange(dayOf(lead.createdAt)));
- const reached = (lead, stage) => STAGE_ORDER.indexOf(lead.stage) >= STAGE_ORDER.indexOf(stage);
+ const reached = (lead, stage) => stage==='new' || STAGE_ORDER.indexOf(lead.stage) >= STAGE_ORDER.indexOf(stage);
  const funnel = [['new', 'Nowe leady'], ['contacted', 'Po rozmowie'], ['meeting', 'Spotkanie'], ['mandate', 'Umowa'], ['won', 'Transakcja']]
   .map(([stage, label]) => ({stage, label, count:leads.filter(lead => reached(lead, stage)).length}));
  const profiles = new Map(crm.profiles.map(profile => [profile.clientId, profile.source]));

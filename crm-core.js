@@ -5,6 +5,16 @@ export const DOCUMENT_STATUS = {needed:'Do pozyskania', received:'Otrzymany', si
 const NOTE_TYPES = {note:'Notatka', email:'E-mail', meeting:'Spotkanie', decision:'Ustalenie'};
 const clean = (value, size) => String(value ?? '').trim().slice(0, size);
 const choice = (choices, value, fallback) => Object.hasOwn(choices, value) ? value : fallback;
+function offerLinks(value){
+ if(!Array.isArray(value) || value.length>8) throw Error('Dodaj maksymalnie 8 linków w każdej sekcji.');
+ return value.map(link=>{
+  if(typeof link!=='string' || link.length>1200) throw Error('Sprawdź długość linku.');
+  let url;
+  try{url=new URL(link);}catch{}
+  if(url?.protocol!=='https:' || url.username || url.password) throw Error('Podaj link HTTPS bez danych logowania.');
+  return link.trim();
+ });
+}
 const fields = {
  profile:{email:180, source:120, summary:3000},
  offer:{title:160, property:100, location:150, description:8000, internal:3000},
@@ -29,6 +39,16 @@ export function crmRecord(kind, input){
   result.price = numeric(input.price,1e9);
   result.area = numeric(input.area,1e6);
   if(!result.property || !result.location) throw Error('Podaj typ i miejscowość nieruchomości.');
+  for(const key of ['photos','listings']){
+   if(input[key]!==undefined) result[key]=offerLinks(input[key]);
+  }
+  if(input.priceHistory!==undefined){
+   if(!Array.isArray(input.priceHistory) || input.priceHistory.length>100) throw Error('Nieprawidłowa historia ceny.');
+   result.priceHistory=input.priceHistory.map(change=>{
+    if(!change || !Number.isFinite(change.at) || (change.price!==null && typeof change.price!=='number')) throw Error('Nieprawidłowy wpis ceny.');
+    return {at:change.at,price:numeric(change.price,1e9)};
+   });
+  }
  }
  if(kind === 'note'){
   if(!result.body) throw Error('Wpisz treść.');
@@ -69,7 +89,8 @@ export function validateCrm(crm, leads){
    if(kind === 'offer' && cases.get(entry.caseId) !== entry.clientId) invalid();
    if(kind === 'document' && (entry.filename ? !/^[a-z0-9-]{1,100}$/i.test(entry.fileKey ?? '') : entry.fileKey !== undefined)) invalid();
    const normalized = crmRecord(kind,entry);
-   if(Object.keys(normalized).some(name=>normalized[name] !== entry[name])) invalid();
+   if(Object.keys(normalized).some(name=>Array.isArray(normalized[name])
+    ?JSON.stringify(normalized[name])!==JSON.stringify(entry[name]):normalized[name]!==entry[name])) invalid();
   }
  }
 }
